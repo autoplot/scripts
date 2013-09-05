@@ -1,7 +1,7 @@
 # correct poes files from CDAWeb, which have faulty timetags.  Here we
 # read the timetags from Year,Day,msec instead of time.
 
-# trivial change by jbfaden
+# second trivial change by jbfaden
 
 resourceURI= getParam( 'resourceURI', 'ftp://satdat.ngdc.noaa.gov/sem/poes/data/raw/ngdc/2013/noaa19/poes_n19_20130409_raw.nc', 'example file to load' )
 
