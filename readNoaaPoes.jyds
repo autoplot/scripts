@@ -1,6 +1,8 @@
 # correct poes files from CDAWeb, which have faulty timetags.  Here we
 # read the timetags from Year,Day,msec instead of time.
 
+# trivial change by jbfaden
+
 resourceURI= getParam( 'resourceURI', 'ftp://satdat.ngdc.noaa.gov/sem/poes/data/raw/ngdc/2013/noaa19/poes_n19_20130409_raw.nc', 'example file to load' )
 
 parm= getParam( 'parm', 'mep_pro_tel0_cps_p3', 'parameter to load', [  'alt', 'lat', 'lon', 'mep_pro_tel0_cps_p1', 'mep_pro_tel0_cps_p2', 'mep_pro_tel0_cps_p3', 'mep_pro_tel0_cps_p4', 'mep_pro_tel0_cps_p5', 'mep_pro_tel0_cps_p6',  'mep_pro_tel90_cps_p1', 'mep_pro_tel90_cps_p2', 'mep_pro_tel90_cps_p3', 'mep_pro_tel90_cps_p4', 'mep_pro_tel90_cps_p5', 'mep_pro_tel90_cps_p6', 'mep_ele_tel0_cps_e1', 'mep_ele_tel0_cps_e2', 'mep_ele_tel0_cps_e3', 'mep_ele_tel90_cps_e1',  'mep_ele_tel90_cps_e2',  'mep_ele_tel90_cps_e3',   'mep_omni_cps_p6', 'mep_omni_cps_p7', 'mep_omni_cps_p8',  'mep_omni_cps_p9' ] )
