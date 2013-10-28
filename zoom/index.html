@@ -1,0 +1,38 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<title>Autoplot Servlet Image Zoom v20131024_1138</title>
+	<link rel="stylesheet" type="text/css" href="css/deps/imgareaselect-default.css" />
+        <link rel="stylesheet" type="text/css" href="css/demo.css" />
+
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js"></script> 
+		<script type="text/javascript" src="js/deps/jquery.ui.js"></script>
+		<script type="text/javascript" src="js/deps/jquery.imgareaselect.min.js"></script>
+        <script type="text/javascript" src="js/deps/binaryajax.js"></script>
+        <script type="text/javascript" src="js/deps/imageinfo.js"></script>
+        <script type="text/javascript" src="js/deps/url.min.js"></script>
+		<script type="text/javascript" src="js/autoplot-zoom.js"></script>
+
+        <script>
+        
+        $(document).ready(function() {
+
+	        	var src = "http://autoplot.org/plot/dev/SimpleServlet?url=tsds.http%3A%2F%2Ftimeseries.org%2Fget.cgi%3FStartDate%3D20050101%26EndDate%3D20060101%26ext%3Dbin%26out%3Dtsml%26ppd%3D1440%26param1%3DOMNI_OMNIHR-26-v0&font=sans-8&format=image%2Fpng&width=700&height=400&column=5em%2C100%25-10em&row=3em%2C100%25-3em";
+	        	autoplotzoom({src:src,height:400});    		
+
+			return;
+			var src = "http://autoplot.org/plot/dev/SimpleServlet?vap=http://autoplot.org/data/autoplot-applet.vap";
+        		autoplotzoom({src:src,height:400});    		
+
+			return;
+			var src = "http://autoplot.org/plot/dev/SimpleServlet?url=vap%2Bdas2server%3Ahttp%3A%2F%2Femfisis.physics.uiowa.edu%2Fdas%2Fdas2Server%3Fdataset%3Drbsp%2FRBSP-A%2FHFR_spectra.dsdf%26start_time%3D2012-09-25T00%3A00%3A00.000Z%26end_time%3D2012-09-26T00%3A00%3A00.000Z";
+	    		autoplotzoom({src:src,height:400});    		
+
+        });
+        </script>
+</head>
+<body>
+	<p>Click and drag a range on the plot to zoom in.  Click to read coordinates.</p>
+</body>
+</html>
