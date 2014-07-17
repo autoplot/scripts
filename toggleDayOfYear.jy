@@ -1,0 +1,4 @@
+# label: Toggle Day-of-Year
+val= dom.options.isDayOfYear()
+val= 1-val
+dom.options.setDayOfYear(val)

@@ -1,0 +1,68 @@
+# label: Replace File...
+# title: Replace filename references within the DOM, and reset xrange
+
+from java.awt import BorderLayout
+from javax.swing import JOptionPane, JPanel, JTextField, ImageIcon, JLabel, JButton, JFileChooser
+
+if ( len( dom.controller.dataSourceFilter.uri )==0 ):
+   JOptionPane.showMessageDialog( None, "Nothing plotted" )
+   split= None
+   oldf= ''  # it would be nice if I could just break out of here..
+else:
+   from org.virbo.datasource import URISplit
+   split= URISplit.parse( dom.controller.dataSourceFilter.uri )
+   oldf= split.file
+
+# define the file component
+panel= JPanel( BorderLayout() )
+text= JTextField(50)
+panel.add( text )
+panel.add( JLabel( "<html>Current file is<br>"+oldf+"<br><br>Enter New Filename: " ), BorderLayout.NORTH ) 
+
+def pickFile(event):
+   chooser= JFileChooser()
+   current= java.io.File(text.getText())
+   print  current.getParentFile() 
+   chooser.setCurrentDirectory( current.getParentFile() )
+   chooser.setSelectedFile( current )
+   ret= chooser.showOpenDialog(event.source)
+   if ( ret==JFileChooser.APPROVE_OPTION ):
+      text.setText( chooser.getSelectedFile().toString() )
+pick= JButton( "pick", actionPerformed=pickFile )
+panel.add( pick, BorderLayout.EAST );
+# end, define the file component
+
+if ( split!=None ):
+
+   if ( oldf[0:5]=='file:' ): oldf= URL(oldf).getFile()
+   text.setText( oldf )
+
+   i= JOptionPane.showConfirmDialog( None, panel, "Change Files", JOptionPane.OK_CANCEL_OPTION )
+
+   if ( i==JOptionPane.OK_OPTION ):
+       newf= text.getText()
+
+       if ( newf!=None ):
+       
+          dom.options.setAutoranging(False)
+
+          for i in dom.dataSourceFilters:
+            oldf1= i.uri
+            newf1= oldf1.replace( oldf, newf )
+            i.uri= newf1
+
+          dom.controller.waitUntilIdle()
+          dom.options.setAutoranging(True)
+
+          ds= dom.dataSourceFilters[0].controller.dataSet
+
+          from org.virbo.dataset import SemanticOps
+          from org.das2.datum import DatumRangeUtil
+
+          ext=  SemanticOps.bounds(ds)
+          xbounds= ext.slice(0)
+          xunits= SemanticOps.getUnits( xbounds )
+          xdr= DatumRange( xbounds.value(0), xbounds.value(1), xunits )
+          if ( not xdr.intersects( dom.plots[0].xaxis.range ) ):
+             dom.plots[0].xaxis.range= xdr
+

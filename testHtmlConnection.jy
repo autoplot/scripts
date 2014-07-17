@@ -1,0 +1,22 @@
+# label: Check Connection
+# tests to see if the network is available and reliable by attempting connect to 
+# autoplot.org
+
+url= URL( 'http://autoplot.org/data' )
+connect= url.openConnection()
+print connect
+connect.setConnectTimeout(300)
+try:
+   connect.connect()
+   result= 1
+   connect.disconnect()
+except:
+   result= 0
+
+if ( result==1 ):
+   msg= 'Internet available, connect to autoplot.org'
+else:
+   msg= 'Internet not available, unable to connect to autoplot.org'
+
+import javax
+javax.swing.JOptionPane.showMessageDialog(None,msg)

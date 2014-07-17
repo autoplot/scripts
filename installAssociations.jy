@@ -1,0 +1,18 @@
+# label: File Associations
+# This requests file associations.
+import javax.jnlp.ServiceManager
+iis = javax.jnlp.ServiceManager.lookup( "javax.jnlp.IntegrationService" )
+
+#if not iis.hasAssociation( 'application/autoplot+xml', ['vap'] ):
+#  if not iis.requestAssociation( 'application/autoplot+xml', ['vap'] ):
+#     setStatus( 'warning: set association w/.vap failed' )
+#  else:
+#     setStatus( 'association added' )
+  
+if not iis.hasAssociation( 'application/x-netcdf', ['cdf'] ):
+  if not iis.requestAssociation( 'application/x-netcdf', ['cdf'] ):
+    setStatus( 'warning: set association w/.cdf failed' )
+  else:
+    setStatus( 'cdf association added' )
+else:
+  setStatus( 'cdf association already exists' )

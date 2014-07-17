@@ -1,0 +1,43 @@
+# label: Make Stack Plot 
+# title:break apart current plot by adding plots and moving plot elements
+
+#lock= dom.controller.mutatorLock()
+#lock.lock('Make Stack Plot')
+canvas= dom.canvases[0].controller.dasCanvas
+canvasLock= canvas.mutatorLock()
+canvasLock.lock()
+
+try:
+  from org.virbo.autoplot.layout import LayoutConstants
+  p= dom.controller.plot
+  pp= dom.controller.getPlotElementsFor(p)
+
+  recycle= [ p ]
+
+  n= len(pp)
+  i= 0
+  title= p.title
+  haveTitle=0
+
+  for pp1 in pp:
+    if ( pp1.isActive() ):
+      if ( len(recycle)>0 ): 
+         plot= recycle.pop()
+      else:
+         plot= dom.controller.addPlot( p, LayoutConstants.BELOW )
+         p= plot
+         pp1.setPlotId( plot.getId() )
+      pp1.style.color= dom.options.color
+      plot.yaxis.label= pp1.legendLabel
+      pp1.displayLegend= False
+      if ( i!=n-1 ): plot.xaxis.drawTickLabels= False
+      if ( haveTitle ): plot.title='' 
+      else: haveTitle=1
+    i=i+1
+
+  from org.virbo.autoplot.dom import DomOps
+  DomOps.newCanvasLayout( dom )
+
+finally:
+  canvasLock.unlock()
+#  lock.unlock()

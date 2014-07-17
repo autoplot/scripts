@@ -1,0 +1,60 @@
+# title: Check the locks that block certain operations
+# label: Locks Status
+from javax.imageio import ImageIO
+from javax.swing import JButton
+from javax.swing import ImageIcon
+from javax.swing import JPanel, JTextArea
+from javax.swing import SwingUtilities
+from javax.swing import SwingConstants
+from java.lang import Thread
+from java.util import LinkedHashMap
+from java.awt import BorderLayout
+from java.lang import Runnable
+from javax.swing import BorderFactory
+
+busy= ImageIcon( URL( 'http://sarahandjeremy.net:8080/hudson/static/66ffcbeb/images/16x16/grey_anime.gif' ) )
+free= ImageIcon( URL( 'http://sarahandjeremy.net:8080/hudson/static/66ffcbeb/images/16x16/blue.gif' ) )
+
+class UpdateUI( Runnable ):
+  def run(self):
+    global chstr
+    if ( len(chstr)==0 ):
+      freeUI.setIcon( free )
+      pendingTF.setText( "" )
+    else:
+      freeUI.setIcon( busy )
+      pendingTF.setText( chstr )
+updateUI= UpdateUI()
+
+def run(evt):
+   global chstr
+   changes= LinkedHashMap()
+   dom.controller.pendingChanges(changes)
+   chstr= ''
+   for ch in changes:
+     client= changes.get(ch).toString()
+     ist= client.find('(')
+     ien= client.rfind(')')
+     if ( ist!=-1 ):
+         client= client[0:ist]+client[(ien+1):]
+     if ( chstr=='' ):
+         chstr= '* ' + ch + ' (' + client + ')'
+     else:
+         chstr= chstr + '\n' + '* ' + ch + ' (' + client + ')'
+   
+   SwingUtilities.invokeLater( updateUI )
+   if ( evt==0 ): 
+      Thread.sleep(100)
+      invokeLater( run, 0 )   
+
+panel= JPanel(BorderLayout())
+freeUI= JButton('status',actionPerformed=run)
+pendingTF= JTextArea(10,60)
+panel.add( freeUI, BorderLayout.NORTH )
+panel.add( pendingTF, BorderLayout.CENTER )
+
+addTab('status',panel)
+invokeLater( run, 0 )
+
+
+

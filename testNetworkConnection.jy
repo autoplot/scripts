@@ -1,0 +1,61 @@
+# Test of downloading, with the idea that this will aid in debugging proxy issues.
+# See emails between Reiner and Jeremy on Feb 14, 2012.
+
+from java.lang.System import err as p
+from java.lang import System
+
+print '== When proxy is not set up, these are None =='
+p.println( "proxySet=%s" % System.getProperties().get("proxySet") )
+p.println( "https.proxyHost=%s" % System.getProperties().get("https.proxyHost" ) )
+p.println( "https.proxyPort=%s" % System.getProperties().get("https.proxyPort" ) )
+p.println( "https.nonProxyHosts=%s" % System.getProperties().get("https.nonProxyHosts" ) )
+p.println( "http.proxyHost=%s" % System.getProperties().get("http.proxyHost" ) )
+p.println( "http.proxyPort=%s" % System.getProperties().get("http.proxyPort" ) )
+p.println( "http.nonProxyHosts=%s" % System.getProperties().get("http.nonProxyHosts" ) )
+p.println( "ftp.proxyHost=%s" % System.getProperties().get("ftp.proxyHost" ) )
+p.println( "ftp.proxyPort=%s" % System.getProperties().get("ftp.proxyPort" ) )
+p.println( "ftp.nonProxyHosts=%s" % System.getProperties().get("ftp.nonProxyHosts" ) )
+
+print '== Can I download files =='
+print '-----'
+print 'test 001: load http://autoplot.org/data/fireworks.wav directly'
+ins = URL('http://autoplot.org/data/fireworks.wav').openStream()
+
+len=0
+while ( ins.read()!=-1 ):
+   len= len+1
+ins.close()
+print 'Direct HTTP: ...%s %d bytes' % ( 'fireworks.wav', len )
+
+print '-----'
+print 'test 002: load FTP via Java directly'
+u= URL( 'ftp://ftp.virbo.org/OMNI/OMNI2/merged/OMNI_OMNI2_merged-20081231-v0.png')
+uc= u.openConnection()
+ins= uc.getInputStream()
+
+len=0
+while ( ins.read()!=-1 ):
+   len= len+1
+ins.close()
+
+print 'Using Java FTP: %s %d bytes' % ( 'OMNI_OMNI2_merged-20081231-v0.png', len )
+
+print '-----'
+print 'test 003: load http://autoplot.org/data/fireworks.wav via downloadResourceAsTempFile via HttpFileSystem'
+f= downloadResourceAsTempFile(URL('http://autoplot.org/data/fireworks.wav'),monitor)
+print 'Ordinary file: ...%s %d bytes' % ( f.toString()[-26:], f.length() )
+
+print '-----'
+print 'test 004: load via downloadResourceAsTempFile query params'
+f= downloadResourceAsTempFile(URL('http://supermag.uib.no/cgi-bin/cgiwrap.cgi?command=../script/download.mag&cli=weigel+19800101+00%3A00+24%3A00+-s+BRW+-ncol+ff333333+-smlcol+ff666666+-smucol+ff999999+-index+-imfgsm+-ymin+-800+-ymax+200'), monitor )
+print 'Direct HTTP connection via ap: ...%s %d bytes' % ( f.toString()[-26:], f.length() )
+
+print '-----'
+print 'test 005: load FTP via downloadResourceAsTempFile via FtpBeanFileSystem'
+f= downloadResourceAsTempFile(URL('ftp://ftp.virbo.org/OMNI/OMNI2/merged/OMNI_OMNI2_merged-20081231-v0.png'), monitor )
+print 'Ordinary FTP: ...%s %d bytes' % ( f.toString()[-26:], f.length() )
+
+print '-----'
+
+print '=== end of test ==='
+

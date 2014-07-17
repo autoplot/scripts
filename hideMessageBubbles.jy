@@ -1,0 +1,13 @@
+# set the log level for all the plots on the page.  INFO is the 
+# initial setting for this, and by default this turns all messages off.
+# This can be run with arguments to set it back to INFO.
+
+level= getParam( 'level', 'OFF', 'the log level', ['INFO','WARNING','OFF'] )
+
+from java.util.logging import Level
+ll= Level.parse(level)
+
+for p in dom.plots:
+    p.controller.dasPlot.logLevel= ll
+
+print('Level set to %s, run with level argument to reset to INFO.' % ll )

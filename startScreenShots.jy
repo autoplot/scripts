@@ -1,0 +1,7 @@
+# title: Start screenshots recorder
+# label: Start Screenshots
+
+from org.virbo.autoplot import ScreenshotsTool
+
+ScreenshotsTool.start( getViewWindow() )
+

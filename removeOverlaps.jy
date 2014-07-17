@@ -1,0 +1,39 @@
+# label: Remove Overlaps and Gaps
+#description: remove the overlaps and gaps by resorting all the 
+#rows.  The relative sizes are preserved.
+
+cc= dom.canvases[0].controller
+rows= dom.canvases[0].rows
+
+weights = [None]*len(rows)  # in per milli.
+
+totalWeight = 0.
+
+# allocate arrays with len(rows) elements
+mins= [0.]*len(rows)
+maxs= [0.]*len(rows)
+count= [0]*len(rows)
+
+from org.das2.graph import DasDevicePosition
+
+for i in range(len(rows)):
+    nmin = DasDevicePosition.parseFormatStr(rows[i].getTop())[0];
+    nmax = DasDevicePosition.parseFormatStr(rows[i].getBottom())[0];
+    mins[i]= nmin;
+    maxs[i]= nmax;
+    weights[i] = (nmax - nmin) * 1000
+    totalWeight += weights[i]
+
+# normalize to per thousand.
+for i in range( len(rows)):
+    weights[i] = 1000. * weights[i] / totalWeight;
+totalWeight = 1000
+
+t = 0
+
+for idx in range( len(rows)):
+    dasRow = rows[idx].controller.getDasRow()
+    dasRow.setMinimum(1. * t / totalWeight)
+    dasRow.setMaximum(1. * (t + weights[idx]) / totalWeight)
+    t += weights[idx]
+

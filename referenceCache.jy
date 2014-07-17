@@ -1,0 +1,12 @@
+# label: Enable Reference Cache
+# title: Turn on experimental reference caching
+# Reference caching makes it so that any particular URI will be resolved 
+# just once, saving memory and improving performance.
+
+from org.virbo.datasource import ReferenceCache
+from java.lang import System
+System.setProperty( "enableReferenceCache", "true" )
+
+ReferenceCache.getInstance().printStatus()
+setStatus( 'Reference Cache enabled.' )
+

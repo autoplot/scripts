@@ -1,0 +1,8 @@
+# label: Add Desktop Shortcuts
+# this call the jnlp service manager and requests shortcuts.
+import javax.jnlp.ServiceManager
+iis = javax.jnlp.ServiceManager.lookup( "javax.jnlp.IntegrationService" )
+if not iis.requestShortcut( True, True, 'autoplot' ):
+  setStatus( 'WARNING: adding shortcut failed' )
+else:
+  setStatus( 'shortcut added' )

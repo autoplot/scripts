@@ -1,0 +1,2 @@
+# label: Reload Tools
+getViewWindow().reloadTools()

@@ -1,0 +1,80 @@
+# label: Take Screenshot
+# title: Built-in tool for creating screenshots
+
+from org.virbo.autoplot import ScreenshotsTool
+
+import time
+for i in xrange(5):
+   setStatus( 'screenshot in %d...' % ( 5-i ) )
+   time.sleep(1)
+setStatus('')
+
+time.sleep(1)
+   
+ss= ScreenshotsTool.getScreenShot()
+
+from org.autoplot.pngwalk import ImageResize
+thumb= ImageResize.getScaledInstance( ss, 400 )
+
+from javax.swing import JLabel, JPanel, JOptionPane, JButton, JCheckBox
+from javax.swing import ImageIcon
+from java.awt import BorderLayout
+from java.awt import Toolkit
+
+label= JLabel( ImageIcon(thumb) )
+
+panel= JPanel()
+panel.setLayout( BorderLayout() )
+
+trim= JCheckBox('Trim')
+trim.selected=True
+
+panel.add( label, BorderLayout.CENTER )
+copypanel= JPanel()
+copypanel.add( JLabel( 'Save or Copy Screenshot' ), BorderLayout.WEST )
+copypanel.add( trim, BorderLayout.CENTER )
+
+def copyClip(evt):
+   from org.virbo.autoplot.transferrable import ImageSelection
+   iss= ImageSelection()
+   if ( trim.selected ):
+     iss.setImage( ScreenshotsTool.trim(ss) )
+   else:
+     iss.setImage( ss )
+   clipboard = Toolkit.getDefaultToolkit().getSystemClipboard()
+   clipboard.setContents( iss, ImageSelection.getNullClipboardOwner() )
+   
+button= JButton( "Copy to Clipboard", actionPerformed=copyClip )
+copypanel.add( button, BorderLayout.EAST )
+
+panel.add( copypanel, BorderLayout.SOUTH )
+
+from javax.swing import JFileChooser
+jf= JFileChooser()
+jf.setAccessory(panel)
+
+from java.io import File
+from java.io import FileOutputStream
+from java.lang import Class
+clas= Class.forName('org.virbo.autoplot.ScreenshotsTool')
+from java.util.prefs import Preferences
+prefs= Preferences.userNodeForPackage( clas )
+f= prefs.get( 'screenshotFile', '$Y$m$d_$H$M$S.png' )
+
+tp= TimeParser.create( '$Y$m$d_$H$M$S.png' )
+   
+if ( f!='' ):
+   jf.setSelectedFile( File( File(f).getParent(), tp.format( TimeUtil.now(), None ) ) )
+
+r= jf.showSaveDialog( getViewWindow() )
+if ( r==JFileChooser.APPROVE_OPTION ):
+  from javax.imageio import ImageIO
+  fn= jf.getSelectedFile()
+  prefs.put( 'screenshotFile', fn.toString() )
+  fo= FileOutputStream( fn )
+  if ( trim.selected ):
+     ss= ScreenshotsTool.trim(ss)
+  ImageIO.write( ss, 'png', fo )
+  fo.close()
+  
+  

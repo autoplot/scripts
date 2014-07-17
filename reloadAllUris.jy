@@ -1,0 +1,7 @@
+# label: Reload All Data
+for dsf in dom.dataSourceFilters:
+  if ( dsf.uri!=None and not dsf.uri.startswith('vap+internal:') ):
+    print dsf.uri
+    dsf.controller.update()
+  else:
+    print 'but not ', dsf.uri

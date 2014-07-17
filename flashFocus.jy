@@ -1,0 +1,7 @@
+# label: Flash Focus
+#cause the selected plot element to flash
+
+r= java.util.Collections.singletonList( dom.controller.plotElement )
+for i in range(3):
+  dom.controller.canvas.controller.indicateSelection( r )
+  java.lang.Thread.sleep(500)
