@@ -1,4 +1,0 @@
-# demo file used to explore if Autoplot is getting updates from github.
-
-result= sin( linspace( 2,4,100 ) )
-result.putProperty( QDataSet.TITLE, '20130906_1530' )
