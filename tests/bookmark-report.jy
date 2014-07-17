@@ -1,0 +1,135 @@
+from javax.xml.parsers import ParserConfigurationException
+from javax.xml.parsers import DocumentBuilderFactory
+from javax.xml.xpath import XPath
+from javax.xml.xpath import XPathExpressionException
+from javax.xml.xpath import XPathFactory
+from javax.xml.xpath import XPathConstants
+from org.xml.sax import InputSource
+from org.virbo.dataset import DDataSet
+
+from java.io import File
+from java.io import FileInputStream
+from java.io import ByteArrayOutputStream
+from java.lang import System
+
+from java.net import URL
+
+from xml.dom.minidom import Document
+
+from org.virbo.cdf import CdfUtil
+
+import md5
+import sys
+
+class Myrun(java.lang.Runnable):
+   def __init__(self, uri):
+       self.uri = uri
+       self.ds= None
+   def run(self):
+       self.ds= getDataSet( self.uri )
+
+# load the data within timeout milliseconds.       
+def loadDataSoon( uri, timeout ):
+   myrun= Myrun( uri )
+   java.lang.Thread(myrun).start()
+   java.lang.Thread.sleep(timeout)
+   return myrun.ds
+
+#############################################################################
+#input = File( '/tmp/bookmarks.xml')
+#inputFile = FileInputStream(input)
+
+outputDir = getParam( 'outputDir', '/tmp/', 'Output directory' )
+inputFile = URL('http://autoplot.org/bookmarks/CDAWeb.xml').openStream()
+start     = getParam( 'start', '1', 'start' )
+stop      = getParam( 'stop', '', 'stop' )
+
+output  = open( outputDir + 'bookmark-report.xml', 'a')
+
+builder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+source  = InputSource( inputFile )
+initialDocument = builder.parse(source)
+
+factory = XPathFactory.newInstance()
+xpath   = factory.newXPath()
+temps   = xpath.evaluate( '//uri', initialDocument, XPathConstants.NODESET )
+
+print 'bookmark-report.jy: Found ' + str(temps.getLength()) + ' bookmarks'
+
+doc  = Document()
+root = doc.createElement("bookmark-report")
+doc.appendChild(root)
+
+t0 =  java.lang.System.currentTimeMillis()
+
+if (len(stop) == 0):
+  stop = temps.getLength()
+
+start = int(start)
+stop  = int(stop)
+
+for i in range(int(start),stop):
+  print 'bookmark-report.jy: Trying #'+str(i)+' of '+str(temps.getLength())
+  try:
+    exception = ''
+    uri= xpath.evaluate('text()', temps.item(i), XPathConstants.STRING)
+    bookmarkEl = doc.createElement("bookmark")
+    root.appendChild(bookmarkEl)
+    uriEl = doc.createElement("uri")
+    uriEl.appendChild(doc.createTextNode(uri))
+    bookmarkEl.appendChild(uriEl)
+    md5El = doc.createElement('md5')
+    md5El.appendChild(doc.createTextNode(md5.new(uri).hexdigest()))
+    bookmarkEl.appendChild(md5El)
+    md5DataEl = doc.createElement('md5-data')
+    byteStr = ByteArrayOutputStream()
+    print 'bookmark-report.jy: Trying ' + uri 
+
+    #ds = getDataSet(uri)
+    ds = loadDataSoon(uri,5000)
+    dumpToQStream(ds, byteStr, True)
+    bookmarkEl.appendChild(md5DataEl)
+    md5DataEl.appendChild(doc.createTextNode(md5.new(byteStr.toString()).hexdigest()))
+    
+    mem= CdfUtil.jvmMemory(ds)/1024/1024
+    fm= java.lang.Runtime.getRuntime().freeMemory()/1024/1024
+    tm= java.lang.Runtime.getRuntime().totalMemory()/1024/1024
+    ctm= java.lang.System.currentTimeMillis()-t0
+    etm= java.lang.System.currentTimeMillis()-(t0+ctm)
+    
+    fmEl = doc.createElement('freeMemory')
+    fmEl.appendChild(doc.createTextNode(str(fm)))
+    bookmarkEl.appendChild(fmEl)
+    tmEl = doc.createElement('totalMemory')
+    tmEl.appendChild(doc.createTextNode(str(tm)))
+    bookmarkEl.appendChild(tmEl)
+    memEl = doc.createElement('memory')
+    memEl.appendChild(doc.createTextNode(str(mem)))
+    bookmarkEl.appendChild(memEl)
+    etmEl = doc.createElement('etm')
+    etmEl.appendChild(doc.createTextNode(str(etm)))
+    bookmarkEl.appendChild(etmEl)
+    ctmEl = doc.createElement('ctm')
+    ctmEl.appendChild(doc.createTextNode(str(ctm)))
+    bookmarkEl.appendChild(ctmEl)
+ 
+    setDataSourceURL( uri )
+    setTitle( uri )
+    fname = outputDir + uri
+    print 'bookmark-report.jy: Writing ' + fname + '.png'
+    writeToPng( fname + '.png' )
+
+  except:
+    exception = "Unexpected error: "+str(sys.exc_info()[0]) + str(sys.exc_info()[1])
+    exEl = doc.createElement('exception')
+    exEl.appendChild(doc.createTextNode(exception))
+    bookmarkEl.appendChild(exEl)
+    continue
+  timerange = uri.split('timerange=')[1]
+  timerangeEl = doc.createElement('default-timerange')
+  timerangeEl.appendChild(doc.createTextNode(timerange))
+  bookmarkEl.appendChild(timerangeEl)
+  
+print doc.toprettyxml(indent="  ")
+output.write(doc.toprettyxml(indent="  "))
+output.flush()

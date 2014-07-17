@@ -1,0 +1,161 @@
+# plot all URIs in file
+
+#getViewWindow().getUndoRedoSupport().setSizeLimit(1)
+
+tag =  '20120823'
+
+from java.io import File
+from org.virbo.cdf import CdfUtil
+
+org.virbo.autoplot.Util.copyFile( java.io.File( '/tmp/plotAllUrisCov.jy' ), java.io.File( '/tmp/plotAllUrisCov.%s.jy' % tag ) )
+
+file= getParam( 'listFile', '/tmp/plotAllUrisCov.txt', 'A file containing a list of URIs' )
+
+f= open( file, 'r' )
+lineCount= len(f.readlines())
+f.close()
+
+f= open( file, 'r' )
+
+errFile= open( '/tmp/plotAllUrisCov.errors.%s.txt' % tag, 'a' )
+i=0
+
+covFile= open( '/tmp/plotAllUrisCov.%s.txt' % tag, 'a' )
+
+memFile= open( '/tmp/plotAllUrisCov.mem.%s.txt' % tag, 'a' )
+memFile.write( 'freeMemory(MB),totalMemory(MB),dsMemory(MB),etm(sec),ctm(sec),line\n' )
+
+currentURI= None
+t0=  java.lang.System.currentTimeMillis()
+scriptT0= t0
+
+from org.das2 import util 
+
+class EH( org.das2.util.ExceptionHandler ):
+   def handle( self, t ):
+      print( t.toString() )
+      errFile.write( '===============\n' )
+      ctm= java.lang.System.currentTimeMillis()-t0
+      errFile.write( '%5d %s \n' % ( ctm, currentURI ) )
+      errFile.write( '%s\n' % t.toString() )
+      errFile.flush()
+   def handleUncaught( self, t ):
+      print( t.toString() )
+      errFile.write( '===============\n' )
+      ctm= java.lang.System.currentTimeMillis()-t0
+      errFile.write( '%5d %s \n' % ( ctm, currentURI ) )
+      errFile.write( '%s\n' % t.toString() )
+      errFile.flush()
+eh= EH()
+getApplicationModel().setExceptionHandler(eh)
+
+def findCoverage( uri ):
+   cov=0.  # 0=no coverage 1= good coverage
+   count= 10
+
+   ds= getDataSource( uri )
+
+   tsb= getTimeSeriesBrowse( ds )
+
+   tr= tsb.getTimeRange()
+   best= tsb.getURI()
+   bestcov= 0
+   
+   while ( cov<0.1 and count>0 ):
+
+      tsb.setTimeRange( tr )
+      print '>> %s' % tsb.getURI()
+
+      ds=None      
+      try:
+         ds= getDataSet( tsb.getURI() )
+
+      except java.lang.Exception,ex:
+         print ex
+         print ds
+         print 'continue on'
+      except Exception,ex:
+         print ex
+         print ds
+         print 'continue on'
+      print '--> %s' % ds
+
+      if ( ds!=None ):
+         if ( ds.property( QDataSet.DEPEND_0 )==None ): return None # check for non-time-depend0
+         expectrange= tsb.getTimeRange()
+         foundrange= org.virbo.dataset.DataSetUtil.asDatumRange( extent( ds.property( QDataSet.DEPEND_0 ) ) )
+         min= org.das2.datum.DatumRangeUtil.normalize( expectrange, foundrange.min() )
+         max= org.das2.datum.DatumRangeUtil.normalize( expectrange, foundrange.max() )
+         cov= max-min
+         print 'cov'
+         if ( cov>bestcov ):
+            besturi= tsb.getURI()
+            bestcov= cov
+      else:
+         cov= 0
+      if ( cov<0.1 ):
+         print 'reject because of coverage: ' + tsb.getURI() 
+         tr= tr.previous()
+         count= count-1
+
+   print 'best=%s' % best
+   return best   
+
+monitor.started()
+monitor.setTaskSize(lineCount)
+
+for line in f:
+  if ( len(line)<=1 or line[0]=='#' ): continue
+  i=i+1
+
+  line= line[:-1]
+
+  monitor.setTaskProgress(i)
+  monitor.setProgressMessage( line )
+  if ( monitor.isCancelled() ): break
+
+  fm= java.lang.Runtime.getRuntime().freeMemory()/1024/1024
+  tm= java.lang.Runtime.getRuntime().totalMemory()/1024/1024
+
+  line= line + "&nohistory=true"
+  currentURI= line
+  print '=== %s ========' % line
+  
+  import string
+  ff=string.replace(line[11:],'&',',')
+  ff=string.replace(ff,'=','_')
+
+  t0= java.lang.System.currentTimeMillis()
+
+  fm= java.lang.Runtime.getRuntime().freeMemory()/1024/1024
+  tm= java.lang.Runtime.getRuntime().totalMemory()/1024/1024
+  ctm= java.lang.System.currentTimeMillis()-t0
+
+  newUri= findCoverage( currentURI )
+
+  ctm= java.lang.System.currentTimeMillis()-t0
+
+  if ( newUri==None ):
+     covFile.write( '# %s  # findCoverage rejected\n' % ( currentURI ) )
+     covFile.flush()     
+     continue
+
+  try:
+     ds= getDataSet( newUri )
+     mem= CdfUtil.jvmMemory( ds )/1024/1024
+     etm= java.lang.System.currentTimeMillis()-(t0+ctm)
+     memFile.write( '%9d,%9d,%9d,%9d,%9.3f,%16.3f,%s\n' % ( java.lang.System.currentTimeMillis()-scriptT0, fm, tm, mem, etm/1000., ctm/1000., line ) )
+     memFile.flush()
+
+     covFile.write( '%5d %s  #records=%d\n' % ( ctm, newUri, ds.length() ) )
+     covFile.flush()
+
+  except java.lang.Exception,ex:
+     covFile.write( '# %s # %s \n' % ( newUri, repr(ex)  ) )
+     covFile.flush()
+
+  except Exception,ex:
+     covFile.write( '# %s # %s  \n' % ( newUri, repr(ex)  ) )
+     covFile.flush()
+     
+

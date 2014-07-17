@@ -1,0 +1,43 @@
+# Enumerate all the CDAWeb products, first by completing on ds= then on id=.
+# This outputs to the screen for review, and to the file /tmp/plotMe.txt
+
+from java.lang import System
+t= System.currentTimeMillis()
+
+dss= getCompletions('vap+cdaweb:ds=')
+i=0
+j=0
+
+from org.autoplot.cdaweb import CDAWebDB
+
+monitor.setTaskSize(len(dss))
+monitor.started()
+
+FILE= open( '/tmp/plotMe.txt', 'w' )
+FILE.write( '# Plot these URIs' )
+
+for ds in dss:
+   monitor.setTaskProgress(i)
+   i=i+1
+
+   print '%5d: %s' % ( i, ds )
+   tr= CDAWebDB.getInstance().getSampleTime( ds[14:] )
+   print '%5d: %s' % ( i, tr )
+
+   monitor.setProgressMessage(ds[14:])
+
+   try:
+      ids= getCompletions(ds+'&id=')
+      for id in ids:
+         j=j+1
+         print '.   %5d: %s&timerange=%s' % ( j, id, tr )
+         FILE.write( '%s&timerange=%s\n' % ( id, tr ) ) 
+
+   except:
+      continue
+
+FILE.close()
+monitor.finished()
+
+print 'DONE, %5.1fs' % ( ( System.currentTimeMillis()-t ) / 1000. )
+
