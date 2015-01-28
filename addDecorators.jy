@@ -32,4 +32,4 @@ dom.canvases[0].controller.dasCanvas.removeTopDecorators()
 dom.canvases[0].controller.dasCanvas.addBottomDecorator( bottom )
 dom.canvases[0].controller.dasCanvas.addTopDecorator( top )
 dom.plots[0].controller.dasPlot.setOpaque(True)
-plot( 'http://cdaweb.gsfc.nasa.gov/istp_public/data/polar/hydra/hyd_h0/$Y/po_h0_hyd_$Y$m$d_v$v.cdf?ELECTRON_DIFFERENTIAL_ENERGY_FLUX&timerange=2000-01-09'
+plot( 'http://cdaweb.gsfc.nasa.gov/istp_public/data/polar/hydra/hyd_h0/$Y/po_h0_hyd_$Y$m$d_v$v.cdf?ELECTRON_DIFFERENTIAL_ENERGY_FLUX&timerange=2000-01-09' )
