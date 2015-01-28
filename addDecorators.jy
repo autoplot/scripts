@@ -5,6 +5,7 @@
 reset()
 
 import javax 
+import org.das2.graph.Painter
 
 ur= 'http://www.cottagesystems.com/honeycomb.1.gif' 
 image= javax.imageio.ImageIO.read( getFile( ur, monitor ) )
