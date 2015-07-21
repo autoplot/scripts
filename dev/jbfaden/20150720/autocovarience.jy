@@ -1,5 +1,4 @@
 # autocorrellation example
-# http://jespertoftkristensen.com/JTK/Blog/Entries/2013/12/29_Efficient_computation_of_autocorrelations%3B_demonstration_in_MatLab_and_Python.html
 
 #randomSeed(5334)
 #z= rand(256)
