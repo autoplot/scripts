@@ -1,0 +1,20 @@
+# autocorrellation example
+# http://jespertoftkristensen.com/JTK/Blog/Entries/2013/12/29_Efficient_computation_of_autocorrelations%3B_demonstration_in_MatLab_and_Python.html
+
+#randomSeed(5334)
+#z= rand(256)
+z= sin( linspace(0,40*PI,256) )
+
+plotx( 0, z, ytitle='signal' )
+
+z = z-mean(z)
+N = z.length()
+c= zeros(N)
+
+for k in xrange(N):
+  tmp = 0
+  for t in xrange(1,N-k):
+    tmp = tmp + z[t]*z[t+k];
+  c[k] = tmp/N;
+
+plotx( 1, c, ytitle='covariance' )
