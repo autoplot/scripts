@@ -1,0 +1,22 @@
+# demo how you can switch to metal at runtime.
+
+lafn= getParam( 'laf', 'GTK', 'look and feel', ['metal','GTK', 'Motif' ] )
+
+if ( lafn=='metal' ):
+    laf= 'javax.swing.plaf.metal.MetalLookAndFeel'
+elif ( lafn=='GTK' ):
+    laf= 'com.sun.java.swing.plaf.gtk.GTKLookAndFeel'
+elif ( lafn=='Motif' ):
+    laf= 'com.sun.java.swing.plaf.motif.MotifLookAndFeel'
+
+from javax.swing import SwingUtilities
+from java.lang import Runnable
+
+class MyRun(Runnable):
+    def run( self ):
+        import javax.swing.UIManager
+        javax.swing.UIManager.setLookAndFeel(laf)
+        x= getViewWindow()
+        SwingUtilities.updateComponentTreeUI( x )
+        
+SwingUtilities.invokeLater(MyRun())
