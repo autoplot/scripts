@@ -1,28 +1,42 @@
 # label: Take Screenshot
 # title: Built-in tool for creating screenshots
+# the caps lock key can be used as a shutter release.
 
 from org.virbo.autoplot import ScreenshotsTool
-
-# the caps lock key can be used as a shutter release.
 from java.awt import Toolkit
 from java.awt.event import KeyEvent
 import time
 
 kit=Toolkit.getDefaultToolkit()
 
-while ( kit.getLockingKeyState(KeyEvent.VK_CAPS_LOCK )==1 ):
-   setStatus( 'release Caps Lock to start count down.' )
-   time.sleep(.1)
+if ( kit.getLockingKeyState(KeyEvent.VK_CAPS_LOCK )==1 ):
+    doCountDown=False
+    setStatus( 'Release Caps Lock to take screenshot' )
+    while ( kit.getLockingKeyState(KeyEvent.VK_CAPS_LOCK ) ):
+        time.sleep(.1)
+        setStatus( '' )
+        time.sleep(.1)
+        setStatus( 'Release Caps Lock to take screenshot' )
+        
+else:
+    doCountDown=True
 
+if doCountDown:
+   for i in xrange(50):
+       if ( kit.getLockingKeyState(KeyEvent.VK_CAPS_LOCK )==1 ):
+           while ( kit.getLockingKeyState(KeyEvent.VK_CAPS_LOCK ) ):
+               time.sleep(.1)
+               setStatus( '' )
+               time.sleep(.1)
+               setStatus( 'Release Caps Lock to take screenshot' )
+               doCountDown= False
+       if ( doCountDown==False ): break
+       setStatus( 'screenshot in %.1f...  Caps Lock will skip...' % ( 5-i/10. ) )
+       time.sleep(.1)
 
-for i in xrange(50):
-   if ( kit.getLockingKeyState(KeyEvent.VK_CAPS_LOCK )==1 ):
-       break
-   setStatus( 'screenshot in %.1f...  Caps Lock will skip...' % ( 5-i/10. ) )
-   time.sleep(.1)
 setStatus('')
 
-time.sleep(0.5)
+time.sleep(.3)
    
 ss= ScreenshotsTool.getScreenShot()
 
