@@ -36,9 +36,8 @@ class MySelectionListener(DataSetUpdateListener):
         ds= dpr.getSelectedDataPoints()
         if ( ds!=None ):
             plot( 1, ds[:,0], ds[:,1], color=Color.YELLOW, symbolSize=11, lineStyle='none' )  
-            dom.plots[0].title='%d Points' % ds.length()
         else:
-            dom.plots[0].title='No Points' 
+            plot( 1, ""  )  
 
 dpr.addSelectedDataSetUpdateListener( MySelectionListener() )
             
