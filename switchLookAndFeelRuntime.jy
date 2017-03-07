@@ -1,13 +1,27 @@
 # demo how you can switch to metal at runtime.
 
-lafn= getParam( 'laf', 'GTK', 'look and feel', ['metal','GTK', 'Motif' ] )
+from javax.swing import UIManager
+lafs= UIManager.getInstalledLookAndFeels()
 
-if ( lafn=='metal' ):
-    laf= 'javax.swing.plaf.metal.MetalLookAndFeel'
-elif ( lafn=='GTK' ):
-    laf= 'com.sun.java.swing.plaf.gtk.GTKLookAndFeel'
-elif ( lafn=='Motif' ):
-    laf= 'com.sun.java.swing.plaf.motif.MotifLookAndFeel'
+aa= []
+classNames= []
+for info in lafs:
+    aa.append( info.getName() )
+    classNames.append( info.getClassName() )
+    print info.getName(), info.getClassName() 
+    
+# The GUI-generator doesn't call the code to derive class names, so we do this by hand.
+aa=['Metal','Nimbus','CDE/Motif','GTK+']
+classNames= [ 'javax.swing.plaf.metal.MetalLookAndFeel',
+              'javax.swing.plaf.nimbus.NimbusLookAndFeel',
+              'com.sun.java.swing.plaf.motif.MotifLookAndFeel',
+              'com.sun.java.swing.plaf.gtk.GTKLookAndFeel' ]
+
+lafn= getParam( 'laf', 'Nimbus', 'look and feel', aa )
+
+for i in xrange(len(aa)):
+    if ( aa[i]==lafn ):
+        laf= classNames[i]
 
 from javax.swing import SwingUtilities
 from java.lang import Runnable
