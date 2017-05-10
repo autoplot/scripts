@@ -13,11 +13,19 @@ from javax.xml.xpath import XPathConstants
 from org.xml.sax import InputSource
 from java.io import File
 from java.io import FileInputStream
+from org.virbo.autoplot import AutoplotUtil
+from javax.swing import BoxLayout,JPanel,JLabel,JButton,JOptionPane
 
-d= getParam('dir','/home/jbf/runBatch/', 'the pngwalk home' )
+d= getParam('dir','/home/jbf/ct/autoplot/tutorials/plotVap/', 'the pngwalk home' )
 
 ff= getParam('name', '', 'prefix for each file, e.g. product')
 
+summary= getParam('summary','', 'One-line summary or title' )
+
+if ( d.startswith('file:') ): d= d[5:]
+
+if ( not d.startswith('/') ): raise Exception('folder must start with /')
+ 
 def getCaption( qcFile ):
     'return the last review comment in the xml file'
     myin= FileInputStream( qcFile )
@@ -38,15 +46,18 @@ thedate= TimeParser.create('$Y$m$d_$H$M').format(TimeUtil.now())
 
 if ( ff=='' ): ff= thedate
 
+if ( len(summary)>0 ):
+    summary= '<br>' + summary 
+    
 html= open( d + '/' + ff + '.html', 'w' )
 html.write( '''
-	<head><title>Tutorial %(dat)s</title></head>
+	<head><title>%(dat)s</title></head>
 	<body style="background-color: #6B6B6B; margin=0;">
 		<div style="padding:20px; top: 0px; margin-right=0px; background-color:black; color:white;height:30px;">
-			<strong>Tutorial %(dat)s</strong>
+			<strong>%(dat)s</strong>%(summary)s
 		</div>
 		<div style="background-color: #6B6B6B;margin-left:100px;">
-''' % { 'dat':thedate } )
+''' % { 'dat':thedate, 'summary':summary } )
 
 for l in ll:
     cap= getCaption( d + '/' + l ) # bug here where line 31 error wasn't highlited.
@@ -55,7 +66,7 @@ for l in ll:
     html.write( '''<figure style="width:700px; float:left;">
 				<a href="%(img)s">
 				<img src="%(img)s" style="width:100%%;margin-left:10px;margin-bottom:10px;"></a>
-				<figcaption style="color: white; text-align:center;">%(cap)s</figcaption>
+				<figcaption style="color: white; text-align:left;">%(cap)s</figcaption>
 			</figure>''' % { 'img':img, 'cap':cap } )
 
 html.write( '''</div>
@@ -64,4 +75,14 @@ html.write( '''</div>
 
 html.close()
 
-print 'wrote '+d + '/' + ff + '.html'
+url= d+'/' + ff + '.html'
+print 'wrote '+url + '.'
+
+msg= 'Wrote '+ url +'.'
+
+panel= JPanel()
+panel.setLayout( BoxLayout(panel,BoxLayout.Y_AXIS ))
+panel.add( JLabel(msg) )
+panel.add( JButton( 'Open in Browser', actionPerformed=lambda a: AutoplotUtil.openBrowser(url) ) )
+
+JOptionPane.showMessageDialog( getViewWindow(),panel)
