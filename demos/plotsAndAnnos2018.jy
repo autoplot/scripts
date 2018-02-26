@@ -6,6 +6,10 @@ tr= getParam( 'timerange', '2017-07-14', 'timerange to load' )
 scAB= ( sc[-1:].upper() )
 
 reset()     # reset whatever was on the plot already
+dom.plots[0].visible=False
+dom.plots[0].xaxis.visible=False
+dom.plots[0].yaxis.visible=False
+
 setCanvasSize(760,824)
 
 annotation( 0, text='VAN ALLEN PROBES '+scAB, fontSize='1.4em', 
@@ -28,9 +32,9 @@ specDs= getDataSet( specUri, tr, monitor.getSubtaskMonitor(0,5,'Load HFR-Spectra
 magDs= getDataSet( magUri, tr, monitor.getSubtaskMonitor(5,10,'Load Mag') )
 ephemDs= getDataSet( ephemUri, tr, monitor.getSubtaskMonitor(10,15,'Load Ephem') )
 
-(p1,pe1)= plot( 1, specDs, xpos='+7em,100%-8em', ypos='0%+2em,30%-3em' )
+(p1,pe1)= plot( 1, specDs, xpos='+7em,100%-8em', ypos='0%+2em,30%-3em', xrange=tr )
 
-(p0,pe0)= plot( 0, magDs, xpos='+7em,100%-8em', ypos='30%+2em,60%-3em' )
+(p0,pe0)= plot( 0, magDs, xpos='+7em,100%-8em', ypos='30%+2em,60%-3em', xrange=tr )
 
 pe0.component= '|detrend(5)'
 p0.yaxis.range= datumRange( '-0.8 to 0.8' )
@@ -46,3 +50,4 @@ annotation( 3, text='Feature', fontSize='1.2em', plotId=p1.id,
             pointAt= '2017-07-14T06:00,2e5', 
             anchorType='data', anchorOffset='2em,2em' )
             
+monitor.finished()
