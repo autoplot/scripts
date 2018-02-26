@@ -1,0 +1,48 @@
+# script that populates canvas
+
+sc= getParam('sc','rbspa','The spacecraft to use',['rbspa','rbspb'])
+tr= getParam( 'timerange', '2017-07-14', 'timerange to load' )
+
+scAB= ( sc[-1:].upper() )
+
+reset()     # reset whatever was on the plot already
+setCanvasSize(760,824)
+
+annotation( 0, text='VAN ALLEN PROBES '+scAB, fontSize='1.4em', 
+            anchorOffset='+7em,60%+2em', anchorPosition='NW', columnId='', rowId='' )
+
+annotation( 1, text='Time Range: '+tr, fontSize='1.2em', 
+            anchorOffset='+7em,60%+4em', anchorPosition='NW', columnId='', rowId='' )
+
+annotation( 2, text='Run the script using shift plus play!cto reset range.', fontSize='0.9em', 
+            anchorOffset='+7em,60%+6em', anchorPosition='NW', columnId='', rowId='' )
+
+ephemUri= 'vap+hapi:http://tsds.org/get/SSCWeb/hapi?id=%s&parameters=Time,X_GSE,Z_GSE' % sc
+specUri= 'vap+cdaweb:ds=RBSP-%s_HFR-SPECTRA_EMFISIS-L2&id=HFR_Spectra' % scAB
+magUri= 'vap+cdaweb:ds=RBSP-%s_MAGNETOMETER_4SEC-GSM_EMFISIS-L3&id=Mag&slice1=2' % scAB
+
+monitor.setTaskSize(15)
+monitor.started()
+
+specDs= getDataSet( specUri, tr, monitor.getSubtaskMonitor(0,5,'Load HFR-Spectra') )
+magDs= getDataSet( magUri, tr, monitor.getSubtaskMonitor(5,10,'Load Mag') )
+ephemDs= getDataSet( ephemUri, tr, monitor.getSubtaskMonitor(10,15,'Load Ephem') )
+
+(p1,pe1)= plot( 1, specDs, xpos='+7em,100%-8em', ypos='0%+2em,30%-3em' )
+
+(p0,pe0)= plot( 0, magDs, xpos='+7em,100%-8em', ypos='30%+2em,60%-3em' )
+
+pe0.component= '|detrend(5)'
+p0.yaxis.range= datumRange( '-0.8 to 0.8' )
+p0.yaxis.label= 'detrend( Bz_GSM )'
+
+bind( p1.xaxis, 'range', p0.xaxis, 'range' )
+bind( p1.xaxis, 'range', p0, 'context' )
+
+plot( 2, ephemDs[:,0], ephemDs[:,1], xpos='100%-7em-250px,100%-8em', ypos='60%+2em,60%+2em+250px', 
+      title='GSE Position' )
+
+annotation( 3, text='Feature', fontSize='1.2em', plotId=p1.id,
+            pointAt= '2017-07-14T06:00,2e5', 
+            anchorType='data', anchorOffset='2em,2em' )
+            
