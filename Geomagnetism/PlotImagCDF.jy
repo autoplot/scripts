@@ -42,6 +42,8 @@ from org.das2.fsm import FileStorageModel
 from org.das2.datum import DatumRange
 from org.das2.util.monitor import NullProgressMonitor
 
+from os.path import expanduser
+
 
 # a mouse listener class
 class MouseListener(MouseAdapter):
@@ -167,7 +169,7 @@ class NavigationDialog (Callable):
                 aggregation_pattern = test_pattern
                 break
         if aggregation_pattern is None:
-            JOptionPane.showMessageDialog(self.dialog, "No files found correspodning to these details", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(self.dialog, "No files found corresponding to these details", "Error", JOptionPane.ERROR_MESSAGE);
             return
             
         # find out what variables are present in the file
@@ -247,6 +249,7 @@ class NavigationDialog (Callable):
             
 # launch the dialog
 if __name__ == "main":
-    NavigationDialog ("C:\\data\\DataCheck1sTestData", "TST", "2014-02-01")
+    home = expanduser("~")
+    NavigationDialog (home, "TST", "2014-01-01")
 
 
