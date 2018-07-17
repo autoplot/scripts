@@ -1,0 +1,252 @@
+# script to automate the creation of aggregation URLs for ImagCDF data
+#
+# S. Flower, 14/09/2016
+#
+# To add this script to the Autoplot 'Tools' menu,make an entry in $HOME/autoplot_data/bookmarks/tools.xml 
+#    <bookmark-list version="1.1">
+#        <bookmark>
+#            <title>INTERMAGNET CDF file viewer</title>
+#            <uri>script:file:/c:/software/Autoplot/AutoplotScripts/PlotImagCDF.jy</uri>
+#        </bookmark>
+#    </bookmark-list>
+#
+# TODO
+# Look at automating axis autorange. See here:
+#    https://sourceforge.net/p/autoplot/feature-requests/443/
+
+from java.text import ParseException
+
+from javax.swing import JFileChooser
+from javax.swing import JDialog
+from javax.swing import JPanel
+from javax.swing import JLabel
+from javax.swing import JTextField
+from javax.swing import JButton
+from javax.swing import JSpinner
+from javax.swing import SpinnerListModel
+from javax.swing import SpinnerNumberModel
+from javax.swing import JOptionPane
+from javax.swing import WindowConstants
+
+from java.awt import BorderLayout
+from java.awt import FlowLayout
+from java.awt import GridLayout
+
+from java.awt.event import MouseAdapter
+
+from threading import Thread
+from java.util.concurrent import Callable
+
+from org.das2.util.filesystem import FileSystem
+from org.das2.fsm import FileStorageModel
+from org.das2.datum import DatumRange
+from org.das2.util.monitor import NullProgressMonitor
+
+
+# a mouse listener class
+class MouseListener(MouseAdapter):
+    def __init__(self, folder, dialog, fileSelectionTextField):
+            self.folder = folder
+            self.dialog = dialog
+            self.fileSelectionTextField = fileSelectionTextField
+    def mousePressed(self, event):
+        file_chooser = JFileChooser (self.folder);
+        file_chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        if (file_chooser.showOpenDialog(self.dialog) == JFileChooser.APPROVE_OPTION):
+            self.folder = file_chooser.getSelectedFile ().getAbsolutePath ()
+            self.fileSelectionTextField.setText (self.folder)
+
+
+# a dialog to allow the user to tell Autoplot where to get data and what to plot
+class NavigationDialog (Callable):
+
+    def __init__(self, folder, obs, time):
+        # create the dialog that the user will use to load a CDF file
+        self.dialog = JDialog (None, "INTERMAGNET CDF Data Viewer")
+        self.dialog.setLayout(BorderLayout())
+        
+        panel = JPanel ();
+        panel.setLayout (GridLayout (0, 2));
+        self.dialog.add (panel, BorderLayout.CENTER);
+        
+        label = JLabel ('Folder containing INTERMAGNET CDF files: ')
+        label.setHorizontalAlignment (JLabel.RIGHT)
+        panel.add (label);
+        self.fileSelectionTextField = JTextField (folder);
+        self.fileSelectionTextField.setEditable (False);
+        mouse_listener = MouseListener(folder, self.dialog, self.fileSelectionTextField)
+        self.fileSelectionTextField.addMouseListener (mouse_listener)
+        panel.add (self.fileSelectionTextField);
+        
+        label = JLabel ('Observatory to plot data for (e.g. BFE): ')
+        label.setHorizontalAlignment (JLabel.RIGHT)
+        panel.add (label);
+        self.obsSelectionTextField = JTextField (obs);
+        panel.add (self.obsSelectionTextField);
+        
+        label = JLabel ('Initial time range (e.g. 2000-12-30): ')
+        label.setHorizontalAlignment (JLabel.RIGHT)
+        panel.add (label);
+        self.timeSelectionTextField = JTextField (time);
+        panel.add (self.timeSelectionTextField);
+        
+        label = JLabel ('Data sample rate: ')
+        label.setHorizontalAlignment (JLabel.RIGHT)
+        panel.add (label);
+        sample_rates = ['Second', 'Minute']
+        model = SpinnerListModel (sample_rates)
+        self.sampleRateSpinner = JSpinner (model)
+        panel.add (self.sampleRateSpinner)
+
+        label = JLabel ('Data publication level: ')
+        label.setHorizontalAlignment (JLabel.RIGHT)
+        panel.add (label);
+        model = SpinnerNumberModel (4, 1, 4, 1);
+        self.pubLevelRateSpinner = JSpinner (model)
+        panel.add (self.pubLevelRateSpinner)
+        
+        label = JLabel ('Hours to plot before / after start / end of day: ')
+        label.setHorizontalAlignment (JLabel.RIGHT)
+        panel.add (label);
+        model = SpinnerNumberModel (1, 0, 4, 1);
+        self.timeExtensionSpinner = JSpinner (model)
+        panel.add (self.timeExtensionSpinner)
+        
+        button = JButton ('Load data',actionPerformed=self.LoadButtonHandler)
+        self.dialog.add(button, BorderLayout.SOUTH)
+        self.dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE)
+        self.dialog.pack()
+        self.dialog.setVisible(True)
+
+    def __call__ (self):
+        # when called in a thread, load the data from the dialog to Autoplot
+        self.LoadDataFromDialog ()
+                
+    def LoadButtonHandler (self, event):
+        # start a thread to load the data from the dialog to Autoplot
+        # this is needed because Autoplot prevents manipulation of
+        # its GUI on the event thread
+        t = Thread (target=self)
+        t.setDaemon (True)
+        t.start ();
+        
+    def LoadDataFromDialog (self):
+        # extract dialog contents
+        folder = self.fileSelectionTextField.getText ();
+        obs = self.obsSelectionTextField.getText ();
+        time = self.timeSelectionTextField.getText ();
+        extend = self.timeExtensionSpinner.getValue ();
+        if self.sampleRateSpinner.getValue().upper() == "MINUTE":
+            sample_rate = "pt1m"
+        else:
+            sample_rate = "pt1s"
+        pub_level = self.pubLevelRateSpinner.getValue ();
+
+        # verify dialog contents
+        error_msg = None
+        try:
+            time_range = DatumRangeUtil.parseTimeRange (time)
+            if len (obs) < 3 or len(obs) > 4:
+                error_msg = "Error: Observatory code must be 3 or 4 characters long"
+        except ParseException:
+            error_msg = "Error: Time must be a valid date/time range"
+        if error_msg != None:
+            JOptionPane.showMessageDialog(self.dialog, error_msg, "Error", JOptionPane.ERROR_MESSAGE);
+            return
+
+        # check that a file exists for the given date/time - try various combinations of case before giving up
+        aggregation_patterns = self.generate_aggregation_patterns (obs, "$Y$m01_000000", sample_rate, pub_level)
+        aggregation_pattern = None
+        for test_pattern in aggregation_patterns:
+            folder_url = "file:/" + folder.replace("\\", "/")
+            fs = FileSystem.create (folder_url)
+            fsm = FileStorageModel.create (fs, test_pattern)
+            monitor = NullProgressMonitor()
+            cdf_files = fsm.getBestNamesFor (datumRange(time), monitor)
+            if len(cdf_files) > 0:
+                aggregation_pattern = test_pattern
+                break
+        if aggregation_pattern is None:
+            JOptionPane.showMessageDialog(self.dialog, "No files found correspodning to these details", "Error", JOptionPane.ERROR_MESSAGE);
+            return
+            
+        # find out what variables are present in the file
+        elements = ""
+        for cdf_file in cdf_files:
+            completions = getCompletions(folder + '/' + cdf_file + '?')
+            for completion in completions:
+                strings = completion.split ("?")
+                if len(strings) == 2:
+                    if strings[1].startswith("GeomagneticField"):
+                        element = strings[1][-1]
+                        if not element in elements:
+                            elements += element
+        if len(elements) <= 0:
+            JOptionPane.showMessageDialog(self.dialog, "No geomagnetic data found in CDF files", "Error", JOptionPane.ERROR_MESSAGE);
+            return
+
+        # set the number of plots
+        setLayout (len (elements))
+        
+        # for each geomagnetic element
+        element_count = 0;
+        for element in elements:
+            # set autorange properties for y-axis
+            # removed because the auto-centre applies to the whole month of data
+            # rather than the single day visible in the canvas
+            if element in "DI":
+                autorange="includeZero=F&width=0.7"
+            else:
+                autorange="includeZero=F&width=50nT"
+#            dom.plots[element_count].yaxis.autoRangeHints = autorange
+            
+            # create aggregation URL
+            file_uri = "vap+cdf:file:/" + folder + "/" + aggregation_pattern + "?timerange=" + time + "&GeomagneticField" + element
+        
+            # send URI to Autoplot
+            plot (element_count, file_uri)
+            element_count = element_count + 1;
+                
+        # show the time range editor rather than the URL entry widget on the main window
+        dom.options.useTimeRangeEditor = True
+            
+        # set the timerange to the current data and rescale data to plot a window before/after current day
+        time_range = DatumRangeUtil.parseTimeRange(time)
+        rescale = '0%-'+str(extend)+'hr,100%+' +str(extend)+'hr'
+        getApplication().getTimeRangeEditor().controlRange=time_range
+        getApplication().getTimeRangeEditor().rescale=rescale
+        
+    # a very simpistic way of dealing with case in filenames - we can't attempt
+    # every possible combination, but we try a few                
+    def generate_aggregation_patterns (self, obs, date, sample_rate, pub_level):
+        return [obs         + "_" + date + "_" + sample_rate         + "_" + str (pub_level)         + ".cdf",
+                obs.lower() + "_" + date + "_" + sample_rate         + "_" + str (pub_level)         + ".cdf",
+                obs.upper() + "_" + date + "_" + sample_rate         + "_" + str (pub_level)         + ".cdf",
+                obs         + "_" + date + "_" + sample_rate         + "_" + str (pub_level)         + ".CDF",
+                obs.lower() + "_" + date + "_" + sample_rate         + "_" + str (pub_level)         + ".CDF",
+                obs.upper() + "_" + date + "_" + sample_rate         + "_" + str (pub_level)         + ".CDF",
+                obs         + "_" + date + "_" + sample_rate.upper() + "_" + str (pub_level)         + ".cdf",
+                obs.lower() + "_" + date + "_" + sample_rate.upper() + "_" + str (pub_level)         + ".cdf",
+                obs.upper() + "_" + date + "_" + sample_rate.upper() + "_" + str (pub_level)         + ".cdf",
+                obs         + "_" + date + "_" + sample_rate.upper() + "_" + str (pub_level)         + ".CDF",
+                obs.lower() + "_" + date + "_" + sample_rate.upper() + "_" + str (pub_level)         + ".CDF",
+                obs.upper() + "_" + date + "_" + sample_rate.upper() + "_" + str (pub_level)         + ".CDF",
+                obs         + "_" + date + "_" + sample_rate         + "_" + str (pub_level).upper() + ".cdf",
+                obs.lower() + "_" + date + "_" + sample_rate         + "_" + str (pub_level).upper() + ".cdf",
+                obs.upper() + "_" + date + "_" + sample_rate         + "_" + str (pub_level).upper() + ".cdf",
+                obs         + "_" + date + "_" + sample_rate         + "_" + str (pub_level).upper() + ".CDF",
+                obs.lower() + "_" + date + "_" + sample_rate         + "_" + str (pub_level).upper() + ".CDF",
+                obs.upper() + "_" + date + "_" + sample_rate         + "_" + str (pub_level).upper() + ".CDF",
+                obs         + "_" + date + "_" + sample_rate.upper() + "_" + str (pub_level).upper() + ".cdf",
+                obs.lower() + "_" + date + "_" + sample_rate.upper() + "_" + str (pub_level).upper() + ".cdf",
+                obs.upper() + "_" + date + "_" + sample_rate.upper() + "_" + str (pub_level).upper() + ".cdf",
+                obs         + "_" + date + "_" + sample_rate.upper() + "_" + str (pub_level).upper() + ".CDF",
+                obs.lower() + "_" + date + "_" + sample_rate.upper() + "_" + str (pub_level).upper() + ".CDF",
+                obs.upper() + "_" + date + "_" + sample_rate.upper() + "_" + str (pub_level).upper() + ".CDF"]
+
+            
+# launch the dialog
+if __name__ == "main":
+    NavigationDialog ("C:\\data\\DataCheck1sTestData", "TST", "2014-02-01")
+
+
