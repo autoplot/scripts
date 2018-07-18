@@ -4,29 +4,17 @@ Autoplot Scripts for Geomagnetism
 Embedded in Autoplot is the Jython (Python in Java) scripting language.
 This folder contains scripts for Autoplot written in Jython.
 
-To use a script:
+If you want to use a script, you can download it and reference it on your
+local file system, but it's easier to run it directly from this repository.
+EG to run the PlotImagCDF.py script:
 
-1) Download the script to a place on your computer. $HOME/autoplot_data/scripts/
-    is a reasonable choice (but you can put them anywhere). The folder $HOME/autoplot_data
-    should already exist once you've run AutoPlot the first time.
+1) Enter the script's GitHub address in AutoPlot's address bar, EG
+   "https://raw.githubusercontent.com/autoplot/scripts/master/Geomagnetism/PlotImagCDF.jy".
 
-2) You can install the script in Autoplot so that you can run it from the menu.
-     To do this, you need to edit the file $HOME/autoplot_data/bookmarks/tools.xml
-     and add a reference to the script like this:
-     
-```
-    <bookmark>
-        <title>INTERMAGNET CDF file viewer (my copy)</title>
-        <uri>script:file:/c:/users/smf/autoplot_data/scripts/PlotImagCDF.jy</uri>
-    </bookmark>
-```
-
-3) Alternatively, you can load the script into AutoPlot by:
-   - Make sure that the script panel is visible by going to the menu item
-     Options / Enable Feature / Script Panel.
-   - Select the 'script' tab on the main window.
-   - Use the "Open..." button to open the script and the 'Execute' button to run it.
-     
+2) In the resulting "Run Script" dialog, there's a check box towards the bottom of the window
+   "Install in tools folder and menu". If you check this box, the script will be downloaded
+   and you'll be able to run it from the AutoPlot "Tools" menu.
+        
      
 Scripts
 -------

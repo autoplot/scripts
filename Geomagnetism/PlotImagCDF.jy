@@ -64,7 +64,7 @@ class NavigationDialog (Callable):
 
     def __init__(self, folder, obs, time):
         # create the dialog that the user will use to load a CDF file
-        self.dialog = JDialog (None, "INTERMAGNET CDF Data Viewer")
+        self.dialog = JDialog (getApplication(), "INTERMAGNET CDF Data Viewer")
         self.dialog.setLayout(BorderLayout())
         
         panel = JPanel ();
