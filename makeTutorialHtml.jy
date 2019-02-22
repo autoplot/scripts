@@ -20,12 +20,16 @@ print '====='
 print params 
 print '====='
 
-d= getParam('dir','/tmp/pngwalk/', 'the pngwalk home' )
-outdir= getParam('outdir','', 'the output directory' )
-qconly= getParam('qconly','F', 'only qc records', ['T','F'] )
+d= getParam('dir','/home/jbf/tutorials/20190222/', 'the pngwalk home' )
+outdir= getParam('outdir','/tmp/ap/t/', 'the output directory' )
+qconly= getParam('qconly','T', 'only qc records', ['T','F'] )
 
-
-if ( outdir=='' ): outdir= d
+if ( outdir=='' ): 
+    outdir= d
+    copyImages= False
+else:
+    copyImages= True
+    mkdir(outdir)
 
 ff= getParam('name', '', 'prefix for each file, e.g. product')
 
@@ -63,16 +67,9 @@ if ( ff=='' ): ff= thedate
 if ( len(summary)>0 ):
     summary= '<br>' + summary 
     
-html= open( outdir + '/' + ff + '.html', 'w' )
-html.write( '''
-	<head><title>%(dat)s</title></head>
-	<body style="background-color: #6B6B6B; margin=0;">
-		<div style="padding:20px; top: 0px; margin-right=0px; background-color:black; color:white;height:30px;">
-			<strong>%(dat)s</strong>%(summary)s
-		</div>
-		<div style="background-color: #6B6B6B;margin-left:100px;">
-''' % { 'dat':thedate, 'summary':summary } )
+i=0
 
+nll= len(ll)
 for l in ll:
     cap= getCaption( d + '/' + l + '.ok' ) 
     if ( cap=='No Caption' ):
@@ -85,19 +82,40 @@ for l in ll:
 
     img= l # remove the '.ok'
     
-    html.write( '''<figure style="width:700px; float:left;">
+    from org.das2.util import FileUtil
+    FileUtil.fileCopy( File( d + img ), File( outdir + '/' + img ) )
+    
+    html= open( outdir + '/' + ff + '_'+ '%003d' % i + '.html', 'w' )
+    html.write( '''
+        <head><title>%(dat)s</title></head>
+        <body style="background-color: #6B6B6B; margin=0;">
+         <div style="padding:20px; top: 0px; margin-right=0px; background-color:black; color:white;height:30px;">
+            <strong>%(dat)s</strong>%(summary)s 
+         </div>
+        <div style="background-color: #6B6B6B;margin-left:100px;">''' % { 'dat':thedate, 'summary':summary } )
+    html.write( '''
+            <figure style="width:700px; float:left;">
 				<a href="%(img)s">
 				<img src="%(img)s" style="width:100%%;margin-left:10px;margin-bottom:10px;"></a>
 				<figcaption style="color: white; text-align:left;">%(cap)s</figcaption>
 			</figure>''' % { 'img':img, 'cap':cap } )
+    html.write( '''</div>\n''' )
+    html.write('''<div style='background-color:black; color:white; background-color: #6B6B6B; width=700px; text-align:left;'>\n''')
+    if ( i>0 ):
+        html.write('<br><br><a href="'+ff + '_'+ '%003d' % (i-1) + '.html' + '">previous</a> ')
+    else:
+        html.write('<br><br>previous ')
+    if ( i<(nll-1) ):
+        html.write('<a href="' + ff + '_'+ '%003d' % (i+1) + '.html' + '">next</a>')
+    else:
+        html.write('next')        
+    html.write('''</p></div>\n''')
+    html.write( '''</body>\n</html>''' );
+    i= i + 1
 
-html.write( '''</div>
-	</body>
-</html>''' )
+    html.close()
 
-html.close()
-
-url= outdir+'/' + ff + '.html'
+url= outdir+'/' + ff + '_000' + '.html'
 print 'wrote '+url + '.'
 
 msg= 'Wrote '+ url +'.'
