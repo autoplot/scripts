@@ -20,8 +20,8 @@ print '====='
 print params 
 print '====='
 
-d= getParam('dir','/home/jbf/tutorials/20190222/', 'the pngwalk home' )
-outdir= getParam('outdir','/tmp/ap/t/', 'the output directory' )
+d= getParam('dir','/home/jbf/public_html/autoplot/tutorials/20190222c/', 'the pngwalk home' )
+outdir= getParam('outdir','/home/jbf/public_html/autoplot/tutorials/20190222cOut/', 'the output directory' )
 qconly= getParam('qconly','T', 'only qc records', ['T','F'] )
 
 if ( outdir=='' ): 
@@ -69,7 +69,18 @@ if ( len(summary)>0 ):
     
 i=0
 
-nll= len(ll)
+nll= 0
+for l in ll:
+    cap= getCaption( d + '/' + l + '.ok' ) 
+    if ( cap=='No Caption' ):
+        cap= getCaption( d + '/' + l + '.problem' ) 
+    if ( cap=='No Caption' ):
+        if ( qconly=='T' ): 
+           continue
+        else:
+           cap= ''
+    nll= nll+1
+    
 for l in ll:
     cap= getCaption( d + '/' + l + '.ok' ) 
     if ( cap=='No Caption' ):
@@ -86,13 +97,25 @@ for l in ll:
     FileUtil.fileCopy( File( d + img ), File( outdir + '/' + img ) )
     
     html= open( outdir + '/' + ff + '_'+ '%003d' % i + '.html', 'w' )
+ 
+    if ( i>0 ):
+        prevs= '<a href="'+ff + '_'+ '%003d' % (i-1) + '.html' + '">previous</a> '
+    else:
+        prevs= 'previous '
+    if ( i<(nll-1) ):
+        nexts= '<a href="' + ff + '_'+ '%003d' % (i+1) + '.html' + '">next</a>'
+    else:
+        nexts= 'next '
+    poss= '%d of %d' % ( i+1, nll )
+    
     html.write( '''
         <head><title>%(dat)s</title></head>
         <body style="background-color: #6B6B6B; margin=0;">
          <div style="padding:20px; top: 0px; margin-right=0px; background-color:black; color:white;height:30px;">
-            <strong>%(dat)s</strong>%(summary)s 
+            <strong>%(dat)s</strong>%(summary)s <br>%(prevs)s %(nexts)s %(poss)s
+            
          </div>
-        <div style="background-color: #6B6B6B;margin-left:100px;">''' % { 'dat':thedate, 'summary':summary } )
+        <div style="background-color: #6B6B6B;margin-left:100px;">''' % { 'dat':thedate, 'summary':summary, 'prevs':prevs, 'nexts':nexts, 'poss':poss } )
     html.write( '''
             <figure style="width:700px; float:left;">
 				<a href="%(img)s">
@@ -100,20 +123,12 @@ for l in ll:
 				<figcaption style="color: white; text-align:left;">%(cap)s</figcaption>
 			</figure>''' % { 'img':img, 'cap':cap } )
     html.write( '''</div>\n''' )
-    html.write('''<div style='background-color:black; color:white; background-color: #6B6B6B; width=700px; text-align:left;'>\n''')
-    if ( i>0 ):
-        html.write('<br><br><a href="'+ff + '_'+ '%003d' % (i-1) + '.html' + '">previous</a> ')
-    else:
-        html.write('<br><br>previous ')
-    if ( i<(nll-1) ):
-        html.write('<a href="' + ff + '_'+ '%003d' % (i+1) + '.html' + '">next</a>')
-    else:
-        html.write('next')        
-    html.write('''</p></div>\n''')
     html.write( '''</body>\n</html>''' );
     i= i + 1
 
     html.close()
+
+
 
 url= outdir+'/' + ff + '_000' + '.html'
 print 'wrote '+url + '.'
