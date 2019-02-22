@@ -1,0 +1,70 @@
+# title: update Autoplot
+# label: update Autoplot
+# Update the jar used to run the application.
+
+version= getParam( 'version', 'devel', 'Autoplot version number', [ 'latest', 'devel', '20190221a' ] )
+
+# find the physical Jar file for Autoplot
+from org.autoplot import AutoplotUI
+r1= AutoplotUI.getClassLoader().getResource("org/autoplot/AutoplotUI.class")
+if ( r1==None ):
+    r1= AutoplotUI.getClassLoader().getResource("org/autoplot/AutoplotUI.class")
+resource= r1.toString()
+if ( resource.startswith('jar:file:') ) :
+    i2= resource.index('!')
+    jarfile= resource[9:i2]
+    print 'current jar file: ' + jarfile
+else:
+    raise Exception('unable to update jar file, autoplot.jar not found.')
+    
+from java.io import File
+from java.nio.file import Files, FileSystems,Paths    
+from javax.swing import JOptionPane
+
+from javax.imageio import ImageIO
+
+new=''
+if ( jarfile.find( 'autoplot.jar' )>-1 ):  # may end with version
+    
+    if ( not jarfile.endswith('autoplot.jar') ):
+        i= jarfile.find( 'autoplot.jar' )
+        jarfile= jarfile[0:i+12]
+
+    response= JOptionPane.showConfirmDialog(getViewWindow(),'replace '+jarfile+
+       (' with http://autoplot.org/jnlp/%s/autoplot.jar?' % version),'update',JOptionPane.OK_CANCEL_OPTION )
+    print 'response=', response
+    if ( response==JOptionPane.OK_OPTION ):
+                          
+        print 'replacing single jar version of autoplot in ' + jarfile
+        new= downloadResourceAsTempFile(URL('http://autoplot.org/jnlp/%s/autoplot.jar' % version ),3600,monitor)
+        new= new.toString()
+        
+        if ( File(jarfile).exists() ):
+            print 'jarfile '+jarfile+' exists.'
+            if Files.isSymbolicLink( File(jarfile).toPath() ):
+                print 'removing symbolic link '+jarfile
+                File(jarfile).delete()
+            elif ( jarfile.endswith('autoplot.jar') ):
+                print 'renaming ' + jarfile + ' to ' + jarfile+'.t'
+                r= File(jarfile).renameTo(File(jarfile+'.t'))
+                if ( r!=0 ):
+                    raise Exception('cannot mv ' + jarfile + ' ' + jarfile+'.t' )
+                print 'deleting '+jarfile
+                if ( not File(jarfile).delete() ):
+                    raise Exception('cannot rm '+jarfile )
+        else:
+            print 'jarfile '+jarfile + ' does not exist.  Deleting anyway because it might be symlink'            
+            File(jarfile).delete()
+        print 'renaming downloaded file to '+jarfile+'.'+version
+        File( new ).renameTo( File( jarfile+'.'+version ) )
+        Files.createSymbolicLink( Paths.get(jarfile,[]),Paths.get(jarfile+'.'+version,[]),[])
+    else:
+        new= 'abort'
+        
+if ( new=='' ):
+    JOptionPane.showMessageDialog(getViewWindow(),'unable to update','update failed, unable to find autoplot.jar.',JOptionPane.WARNING_MESSAGE)
+elif ( new=='abort' ):
+    pass
+else:            
+    JOptionPane.showMessageDialog(getViewWindow(),'updated to '+version+'. Restart Autoplot.','update',JOptionPane.INFORMATION_MESSAGE)
+
