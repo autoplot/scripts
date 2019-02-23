@@ -1,0 +1,38 @@
+    body {
+       background-color: #6B6B6B;
+       margin=0;
+    }
+    a:link {
+        color: gray;
+    }
+    a:visited {
+        color: gray;
+    }
+    a:hover {
+        color: white;
+    }
+    #header {
+        padding:20px;
+        top: 0px;
+        margin-right=0px;
+        background-color:black;
+        color:white;height:30px;
+    }
+    #content {
+        background-color: #6B6B6B;
+        margin-left:100px;
+    }
+    #contentImg {
+        width:100%;
+        margin-left:10px;
+        margin-bottom:10px;
+    }
+    #fcap {
+        color: white; 
+        text-align:left;
+    }
+    #fig {
+         width:700px; 
+         float:left;
+    }
+
