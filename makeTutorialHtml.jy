@@ -16,13 +16,15 @@ from java.io import FileInputStream
 from org.virbo.autoplot import AutoplotUtil
 from javax.swing import BoxLayout,JPanel,JLabel,JButton,JOptionPane
 
+print '****'
+print 'Running AWESOME local copy'
 print '====='
 print params 
 print '====='
 
-d= getParam('dir','/home/jbf/public_html/autoplot/tutorials/20190222c/', 'the pngwalk home' )
-outdir= getParam('outdir','/home/jbf/public_html/autoplot/tutorials/20190222cOut/', 'the output directory' )
-qconly= getParam('qconly','T', 'only qc records', ['T','F'] )
+d= getParam('dir', 'file:/home/jbf/tmp/pngwalk3', 'the pngwalk home' )
+outdir= getParam('outdir','/home/jbf/tmp/testtut/', 'the output directory' )
+qconly= getParam('qconly','F', 'only qc records', ['T','F'] )
 
 if ( outdir=='' ): 
     outdir= d
@@ -38,6 +40,7 @@ summary= getParam('summary','', 'One-line summary or title' )
 if ( d.startswith('file:') ): d= d[5:]
 
 if ( not d.startswith('/') ): raise Exception('folder must start with /')
+if ( not d.endswith('/') ): d= d+'/'
  
 def getCaption( qcFile ):
     'return the last review comment in the xml file'
@@ -80,8 +83,18 @@ for l in ll:
         else:
            cap= ''
     nll= nll+1
-    
+
+monitor.setTaskSize(nll)
+monitor.started()
+cssurl= URL("https://github.com/autoplot/scripts/makeTutorialHtml.css");
+from org.autoplot.datasource import DataSetURI
+cssfile= DataSetURI.getFile(cssurl,monitor.getSubtaskMonitor(0,10,'download css'));
+from org.das2.util import FileUtil
+FileUtil.fileCopy( cssfile, File( outdir + '/style.css' ) )
+
 for l in ll:
+    monitor.setTaskProgress(i)
+    monitor.setProgressMessage(l)
     cap= getCaption( d + '/' + l + '.ok' ) 
     if ( cap=='No Caption' ):
         cap= getCaption( d + '/' + l + '.problem' ) 
@@ -96,41 +109,48 @@ for l in ll:
     from org.das2.util import FileUtil
     FileUtil.fileCopy( File( d + img ), File( outdir + '/' + img ) )
     
-    html= open( outdir + '/' + ff + '_'+ '%003d' % i + '.html', 'w' )
+    html= open( outdir + ff + '_'+ '%04d' % i + '.html', 'w' )
  
     if ( i>0 ):
-        prevs= '<a href="'+ff + '_'+ '%003d' % (i-1) + '.html' + '">previous</a> '
+        prevs= '<a href="'+ff + '_'+ '%04d' % (i-1) + '.html' + '">previous</a> '
     else:
         prevs= 'previous '
     if ( i<(nll-1) ):
-        nexts= '<a href="' + ff + '_'+ '%003d' % (i+1) + '.html' + '">next</a>'
+        nexts= '<a href="' + ff + '_'+ '%04d' % (i+1) + '.html' + '">next</a>'
     else:
         nexts= 'next '
     poss= '%d of %d' % ( i+1, nll )
     
-    html.write( '''
-        <head><title>%(dat)s</title></head>
-        <body style="background-color: #6B6B6B; margin=0;">
-         <div style="padding:20px; top: 0px; margin-right=0px; background-color:black; color:white;height:30px;">
-            <strong>%(dat)s</strong>%(summary)s <br>%(prevs)s %(nexts)s %(poss)s
-            
-         </div>
-        <div style="background-color: #6B6B6B;margin-left:100px;">''' % { 'dat':thedate, 'summary':summary, 'prevs':prevs, 'nexts':nexts, 'poss':poss } )
-    html.write( '''
-            <figure style="width:700px; float:left;">
-				<a href="%(img)s">
-				<img src="%(img)s" style="width:100%%;margin-left:10px;margin-bottom:10px;"></a>
-				<figcaption style="color: white; text-align:left;">%(cap)s</figcaption>
-			</figure>''' % { 'img':img, 'cap':cap } )
-    html.write( '''</div>\n''' )
-    html.write( '''</body>\n</html>''' );
+    htmltemp= '''
+<head>
+    <title>%(dat)s</title>
+    <link rel="stylesheet" type="text/css" href="style.css">
+</head>
+<body>
+    <div id='header'>
+        <strong>%(dat)s</strong>%(summary)s <br>%(prevs)s %(nexts)s %(poss)s
+    </div>
+    <div id='content'>
+        <figure id='fig'>
+             <a href=%(img)s">
+             <img id='contentImg' src="%(img)s"></a>
+             <figcaption id="fcap">%(cap)s</figcaption>
+        </figure>
+    </div>
+</body>
+</html>
+    '''
+    sss= htmltemp % { 'dat':thedate, 'summary':summary, 'prevs':prevs, 'nexts':nexts, 'poss':poss, 'img': img, 'cap':cap } 
+    html.write( sss )
+
     i= i + 1
 
     html.close()
 
 
+monitor.finished()
 
-url= outdir+'/' + ff + '_000' + '.html'
+url= outdir+'/' + ff + '_0000' + '.html'
 print 'wrote '+url + '.'
 
 msg= 'Wrote '+ url +'.'
