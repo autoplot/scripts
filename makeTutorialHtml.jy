@@ -109,8 +109,9 @@ for l in ll:
 
     img= l # remove the '.ok'
     
-    from org.das2.util import FileUtil
-    FileUtil.fileCopy( File( d + img ), File( outdir + '/' + img ) )
+    if ! File( d + img ).equals( File( outdir + '/' + img ) ):
+        from org.das2.util import FileUtil
+        FileUtil.fileCopy( File( d + img ), File( outdir + '/' + img ) )
     
     html= open( outdir + ff + '_'+ '%04d' % i + '.html', 'w' )
  
