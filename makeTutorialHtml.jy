@@ -13,7 +13,7 @@ from javax.xml.xpath import XPathConstants
 from org.xml.sax import InputSource
 from java.io import File
 from java.io import FileInputStream
-from org.virbo.autoplot import AutoplotUtil
+from org.autoplot import AutoplotUtil
 from javax.swing import BoxLayout,JPanel,JLabel,JButton,JOptionPane
 
 print '****'
@@ -60,6 +60,9 @@ def getCaption( qcFile ):
 
 print 'ls '+d + '/' + ff + '*.png'
 ll= listDirectory( d + '/' + ff + '*.png' )
+if len(ll)==0:
+   print 'ls '+d + '/' + ff + '*.jpg'
+   ll= listDirectory( d + '/' + ff + '*.jpg' )
 
 print 'found %d files.'%len(ll)
 
