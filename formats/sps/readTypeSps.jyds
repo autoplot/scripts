@@ -1,7 +1,7 @@
 from org.das2.util import LoggerManager
 setScriptTitle( 'RadioJove SPS Reader' )
 
-logger= LoggerManager.getLogger('apdss.sps')
+logger= LoggerManager.getLogger('apdss.radiojove.sps')
 
 resourceURI= getParam( 'resourceURI', 'http://www-pw.physics.uiowa.edu/~jbf/autoplot/jyds/formats/radiojove/1522660086180402060700.sps', 'example file to load' )
 #resourceURI= getParam( 'resourceURI', 'file:///home/jbf/ct/autoplot/data/sps/shing/20210816/200501000000_AJ4CO_DPS.sps', 'example file to load' )
