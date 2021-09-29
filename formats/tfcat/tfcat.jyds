@@ -1,0 +1,91 @@
+from org.autoplot import RenderType
+setScriptDescription('''Reads TFCat files from MASER website.  These are JSON files where
+labelled polygons are stored.''')
+
+tr= getParam( 'timerange', '2016-08-22', 'timerange to load' )
+
+from java.lang import System,Double
+from java.io import File
+from org.das2.util import FileUtil,LoggerManager
+from org.json import JSONObject
+# how fast can the JSON parser parse Baptiste's file?
+
+#LoggerManager.setTimerLogfile("/tmp/mylogfile.txt")
+#LoggerManager.resetTimer('read json')
+#LoggerManager.setEnableTimers(True)
+
+logger= LoggerManager.getLogger('analysis.TFCat')
+
+resourceURI= getParam( 'resourceURI', 'https://maser.obspm.fr/doi/10.25935/nhb2-wy29/content/juno_waves_lesia_tfcat_2016.json')
+
+labelOrBounds= getParam( 'mode', 'bounds', 'Load the label or the bounds', [ 'label','bounds' ] )
+
+theFile= getFile( resourceURI, monitor )
+
+#t0= System.currentTimeMillis()
+logger.fine( 'reading '+str(theFile) )
+ss= FileUtil.readFileToString(theFile)
+#LoggerManager.markTime('readFile')
+
+
+jo= JSONObject( ss )
+#LoggerManager.markTime('jsonExists')
+
+logger.fine( 'get the units' )
+units= [None,None]
+crs= jo.getJSONObject('crs')
+properties= crs.getJSONObject('properties')
+time_coords= properties.get('time_coords')
+sTimeUnits= time_coords.get('unit') + ' since '+ time_coords.get('time_origin')
+timeUnits= Units.lookupTimeUnits( sTimeUnits )
+units[0]= timeUnits
+sunits=properties.get('spectral_coords').get('unit')
+units[1]= Units.lookupUnits(sunits)
+
+fs= jo.getJSONArray('features')
+logger.fine( 'number of features: %d' % fs.length() )
+
+dsb= DataSetBuilder(2,100,2)
+dsn= DataSetBuilder(2,100,3)
+dsn.putProperty( QDataSet.RENDER_TYPE, 'digital' )
+
+nom= Units.nominal()
+fill= Double.NaN
+for i in xrange(fs.length()):
+    f= fs.get(i)
+    if ( f.get('type')=='Feature' ):
+        g= f.get('geometry')
+        if g.get('type')=='Polygon':
+            c= g.get('coordinates')
+            logger.finer( 'loading feature: %d' % c.length() )
+            dsb.setUnits(0,units[0])
+            dsb.setUnits(1,units[1])
+            dsn.setUnits(0,units[0])
+            dsn.setUnits(1,units[1])
+            sumx= 0
+            basex= 0
+            sumy= 0
+            for j in xrange(c.length()):
+                p= c.getJSONArray(j)
+                if ( j==0 ): basex=p.get(0)
+                dsb.nextRecord( [ p.get(0), p.get(1) ] )
+                sumx= sumx + ( p.get(0) - basex )
+                sumy= sumy + log10( p.get(1) )
+            featureType= f.get('properties').get('feature_type')
+            avgx= sumx/c.length() +  basex
+            print avgx
+            avgy= pow( 10, sumy/c.length() )
+            print avgx, avgy
+            dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )
+    if ( dsb.length>0 ):
+        dsb.nextRecord( [ fill, fill ] )
+
+ds= dsb.getDataSet()
+bounds = dataset( ds[:,0], ds[:,1], renderType='line' )
+labels= dsn.getDataSet()
+
+if labelOrBounds=='bounds':
+    result= bounds
+else:
+    result= labels
+    
