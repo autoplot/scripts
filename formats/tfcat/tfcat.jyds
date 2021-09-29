@@ -2,8 +2,6 @@ from org.autoplot import RenderType
 setScriptDescription('''Reads TFCat files from MASER website.  These are JSON files where
 labelled polygons are stored.''')
 
-tr= getParam( 'timerange', '2016-08-22', 'timerange to load' )
-
 from java.lang import System,Double
 from java.io import File
 from org.das2.util import FileUtil,LoggerManager
@@ -73,12 +71,10 @@ for i in xrange(fs.length()):
                 sumy= sumy + log10( p.get(1) )
             featureType= f.get('properties').get('feature_type')
             avgx= sumx/c.length() +  basex
-            print avgx
             avgy= pow( 10, sumy/c.length() )
-            print avgx, avgy
             dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )
-    if ( dsb.length>0 ):
-        dsb.nextRecord( [ fill, fill ] )
+    if ( dsb.length>0 ):  # insert fill record to break the connecting line
+        dsb.nextRecord( [ fill, fill ] )  
 
 ds= dsb.getDataSet()
 bounds = dataset( ds[:,0], ds[:,1], renderType='line' )
