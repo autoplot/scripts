@@ -6,11 +6,6 @@ from java.lang import System,Double
 from java.io import File
 from org.das2.util import FileUtil,LoggerManager
 from org.json import JSONObject
-# how fast can the JSON parser parse Baptiste's file?
-
-#LoggerManager.setTimerLogfile("/tmp/mylogfile.txt")
-#LoggerManager.resetTimer('read json')
-#LoggerManager.setEnableTimers(True)
 
 logger= LoggerManager.getLogger('analysis.TFCat')
 
@@ -20,14 +15,10 @@ labelOrBounds= getParam( 'mode', 'bounds', 'Load the label or the bounds', [ 'la
 
 theFile= getFile( resourceURI, monitor )
 
-#t0= System.currentTimeMillis()
 logger.fine( 'reading '+str(theFile) )
 ss= FileUtil.readFileToString(theFile)
-#LoggerManager.markTime('readFile')
-
 
 jo= JSONObject( ss )
-#LoggerManager.markTime('jsonExists')
 
 logger.fine( 'get the units' )
 units= [None,None]
