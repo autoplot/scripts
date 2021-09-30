@@ -4,14 +4,12 @@ setScriptTitle( 'RadioJove SPS Reader' )
 logger= LoggerManager.getLogger('apdss.radiojove.sps')
 
 resourceURI= getParam( 'resourceURI', 'http://www-pw.physics.uiowa.edu/~jbf/autoplot/jyds/formats/radiojove/1522660086180402060700.sps', 'example file to load' )
-#resourceURI= getParam( 'resourceURI', 'file:///home/jbf/ct/autoplot/data/sps/shing/20210816/200501000000_AJ4CO_DPS.sps', 'example file to load' )
 
 antenna= getParam( 'antenna', 0, 'the antenna to load when multiple dual antenna file is used.', { 'values':[0,1], 'labels':['0','1'] } )
 
 logger.fine( 'resourceURI: %s' % resourceURI )
 logger.fine( 'antenna: %d' %antenna )
 
-#oldSlow= getParam( 'oldSlow', 'T', 'use old and slow method with copy to doubles', [ 'T','F' ] )
 oldSlow= 'F'
 
 #resourceURI='/home/masafumi/Linux/sps_example/150127042000.sps'
