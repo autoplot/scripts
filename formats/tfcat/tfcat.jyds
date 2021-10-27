@@ -52,18 +52,19 @@ for i in xrange(fs.length()):
             dsn.setUnits(0,units[0])
             dsn.setUnits(1,units[1])
             sumx= 0
-            basex= 0
+            basex= 0  # This will be needed for times, I think.
             sumy= 0
             for j in xrange(c.length()):
-                p= c.getJSONArray(j)
-                if ( j==0 ): basex=p.get(0)
-                dsb.nextRecord( [ p.get(0), p.get(1) ] )
-                sumx= sumx + ( p.get(0) - basex )
-                sumy= sumy + log10( p.get(1) )
-            featureType= f.get('properties').get('feature_type')
-            avgx= sumx/c.length() +  basex
-            avgy= pow( 10, sumy/c.length() )
-            dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )
+                p0= c.getJSONArray(j)
+                for k in xrange(p0.length()):
+                    p= p0.getJSONArray(k)
+                    dsb.nextRecord( [ p.get(0), p.get(1) ] )
+                    sumx= sumx + ( p.get(0) - basex )
+                    sumy= sumy + log10( p.get(1) )
+                featureType= f.get('properties').get('feature_type')
+                avgx= sumx/c.length() +  basex
+                avgy= pow( 10, sumy/c.length() )
+                dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )
     if ( dsb.length>0 ):  # insert fill record to break the connecting line
         dsb.nextRecord( [ fill, fill ] )  
 
