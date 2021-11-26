@@ -9,10 +9,27 @@ from org.json import JSONObject
 
 logger= LoggerManager.getLogger('analysis.TFCat')
 
-resourceURI= getParam( 'resourceURI', 'https://maser.obspm.fr/doi/10.25935/nhb2-wy29/content/juno_waves_lesia_tfcat_2016.json')
+#test= getParam( 'test', '3', 'test number', [ '','1','2','3'] )
+test= ''
 
+if test=='':
+    resourceURI= getParam( 'resourceURI', 'https://maser.obspm.fr/doi/10.25935/nhb2-wy29/content/juno_waves_lesia_tfcat_2016.json')
+elif test=='1':
+    resourceURI= getParam( 'resourceURI', 'file:/home/jbf/ct/autoplot/data.backup/json/tfcat/10.25935.1fqm-fs07/leblanc_aa_catalogue_emi_1988_v1.0.pp.json')
+elif test=='2':
+    resourceURI= getParam( 'resourceURI', 'file:/home/jbf/ct/autoplot/data.backup/json/tfcat/10.25935.nhb2-wy29/juno_waves_lesia_tfcat_2016.json')
+elif test=='3':
+    resourceURI= getParam( 'resourceURI', 'file:/home/jbf/ct/autoplot/data.backup/json/tfcat/10.25935.r11g-6j63/cassini_faraday_patches_2008.json')
+else:
+    raise Exception('test number')
+    
 labelOrBounds= getParam( 'mode', 'bounds', 'Load the label or the bounds', [ 'label','bounds' ] )
 
+if ( labelOrBounds=='label' ):
+    labelWith= getParam( 'labelWith', 'feature_type', 'The property used to label the data.', { "examples":['obs_id','meridian_transit'] } )
+else:
+    labelWith= ''
+    
 theFile= getFile( resourceURI, monitor )
 
 logger.fine( 'reading '+str(theFile) )
@@ -44,7 +61,8 @@ for i in xrange(fs.length()):
     f= fs.get(i)
     if ( f.get('type')=='Feature' ):
         g= f.get('geometry')
-        if g.get('type')=='Polygon':
+        typ= g.get('type')
+        if typ=='Polygon':
             c= g.get('coordinates')
             logger.finer( 'loading feature: %d' % c.length() )
             dsb.setUnits(0,units[0])
@@ -57,16 +75,42 @@ for i in xrange(fs.length()):
             sumn= 0
             for j in xrange(c.length()):
                 p0= c.getJSONArray(j)
+                if ( j==0 and p0.length()>0 ):
+                    p= p0.getJSONArray(0)
+                    basex= p.get(0)
                 for k in xrange(p0.length()):
                     p= p0.getJSONArray(k)
                     dsb.nextRecord( [ p.get(0), p.get(1) ] )
                     sumx= sumx + ( p.get(0) - basex )
                     sumy= sumy + log10( p.get(1) )
                     sumn= sumn + 1
-                featureType= f.get('properties').get('feature_type')
+                featureType= f.get('properties').optString(labelWith,'')
+                #featureType= f.get('properties').get('feature_type')
                 avgx= sumx/sumn +  basex
                 avgy= pow( 10, sumy/sumn )
                 dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )
+        elif typ=='MultiPoint':
+            c= g.get('coordinates')
+            logger.finer( 'loading feature: %d' % c.length() )
+            dsb.setUnits(0,units[0])
+            dsb.setUnits(1,units[1])
+            dsn.setUnits(0,units[0])
+            dsn.setUnits(1,units[1])
+            sumx= 0
+            basex= 0  
+            sumy= 0
+            sumn= 0
+            for j in xrange(c.length()):
+                p= c.getJSONArray(j)
+                if ( j==0 ): basex=p.get(0)
+                dsb.nextRecord( [ p.get(0), p.get(1) ] )
+                sumx= sumx + ( p.get(0) - basex )
+                sumy= sumy + log10( p.get(1) )
+                sumn= sumn + 1
+            featureType= f.get('properties').optString(labelWith,'')
+            avgx= sumx/sumn +  basex
+            avgy= pow( 10, sumy/sumn )
+            dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )            
     if ( dsb.length>0 ):  # insert fill record to break the connecting line
         dsb.nextRecord( [ fill, fill ] )  
 
