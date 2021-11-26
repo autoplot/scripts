@@ -26,7 +26,7 @@ else:
 labelOrBounds= getParam( 'mode', 'bounds', 'Load the label or the bounds', [ 'label','bounds' ] )
 
 if ( labelOrBounds=='label' ):
-    labelWith= getParam( 'labelWith', 'feature_type', 'The property used to label the data.', { "examples":['obs_id','meridian_transit'] } )
+    labelWith= getParam( 'labelWith', 'feature_type', 'The property used to label the data.', { "examples":['obs_id','meridian_transit','feature_type'] } )
 else:
     labelWith= ''
     
@@ -75,7 +75,7 @@ for i in xrange(fs.length()):
             sumn= 0
             for j in xrange(c.length()):
                 p0= c.getJSONArray(j)
-                if ( j==0 and p0.length()>0 ):
+                if ( j==0 ):
                     p= p0.getJSONArray(0)
                     basex= p.get(0)
                 for k in xrange(p0.length()):
