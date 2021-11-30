@@ -23,7 +23,7 @@ elif test=='3':
 else:
     raise Exception('test number')
     
-labelOrBounds= getParam( 'mode', 'bounds', 'Load the label or the bounds', [ 'label','bounds' ] )
+labelOrBounds= getParam( 'mode', 'bounds', 'Load the label or the bounds', [ 'label','bounds','bbox' ] )
 
 if ( labelOrBounds=='label' ):
     labelWith= getParam( 'labelWith', 'feature_type', 'The property used to label the data.', { "examples":['obs_id','meridian_transit','feature_type'] } )
@@ -59,67 +59,91 @@ nom= Units.nominal()
 fill= Double.NaN
 for i in xrange(fs.length()):
     f= fs.get(i)
-    if ( f.get('type')=='Feature' ):
-        g= f.get('geometry')
-        typ= g.get('type')
-        if typ=='Polygon':
-            c= g.get('coordinates')
-            logger.finer( 'loading feature: %d' % c.length() )
-            dsb.setUnits(0,units[0])
-            dsb.setUnits(1,units[1])
-            dsn.setUnits(0,units[0])
-            dsn.setUnits(1,units[1])
-            sumx= 0
-            basex= 0  # This will be needed for times, I think.
-            sumy= 0
-            sumn= 0
-            for j in xrange(c.length()):
-                p0= c.getJSONArray(j)
-                if ( j==0 ):
-                    p= p0.getJSONArray(0)
-                    basex= p.get(0)
-                for k in xrange(p0.length()):
-                    p= p0.getJSONArray(k)
+    if ( labelOrBounds=='bbox' ):
+        g= f.get('bbox')
+        print g.get(0), g.get(2), units[0].createDatum(g.get(0)), units[0].createDatum(g.get(2)) 
+        print g.get(1), g.get(3), units[1].createDatum(g.get(1)), units[1].createDatum(g.get(3))
+        
+        dsb.setUnits(0,units[0])
+        dsb.setUnits(1,units[1])
+        if ( dsb.length>0 ):  # insert fill record to break the connecting line
+            dsb.nextRecord( [ fill, fill ] ) 
+            stop 
+        dsb.nextRecord( [ g.get(0), g.get(1) ] )
+        dsb.nextRecord( [ g.get(2), g.get(1) ] )
+        dsb.nextRecord( [ g.get(2), g.get(3) ] )
+        dsb.nextRecord( [ g.get(0), g.get(3) ] )
+        dsb.nextRecord( [ g.get(0), g.get(1) ] )
+
+    else:
+        if ( f.get('type')=='Feature' ):
+            g= f.get('geometry')
+            typ= g.get('type')
+            if typ=='Polygon':
+                c= g.get('coordinates')
+                logger.finer( 'loading feature: %d' % c.length() )
+                dsb.setUnits(0,units[0])
+                dsb.setUnits(1,units[1])
+                dsn.setUnits(0,units[0])
+                dsn.setUnits(1,units[1])
+                sumx= 0
+                basex= 0  # This will be needed for times, I think.
+                sumy= 0
+                sumn= 0
+                for j in xrange(c.length()):
+                    p0= c.getJSONArray(j)
+                    if ( j==0 ):
+                        p= p0.getJSONArray(0)
+                        basex= p.get(0)
+                    for k in xrange(p0.length()):
+                        p= p0.getJSONArray(k)
+                        dsb.nextRecord( [ p.get(0), p.get(1) ] )
+                        sumx= sumx + ( p.get(0) - basex )
+                        sumy= sumy + log10( p.get(1) )
+                        sumn= sumn + 1
+                    featureType= f.get('properties').optString(labelWith,'')
+                    #featureType= f.get('properties').get('feature_type')
+                    avgx= sumx/sumn +  basex
+                    avgy= pow( 10, sumy/sumn )
+                    dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )
+            elif typ=='MultiPoint' or typ=='LineString':
+                c= g.get('coordinates')
+                logger.finer( 'loading feature: %d' % c.length() )
+                dsb.setUnits(0,units[0])
+                dsb.setUnits(1,units[1])
+                dsn.setUnits(0,units[0])
+                dsn.setUnits(1,units[1])
+                sumx= 0
+                basex= 0  
+                sumy= 0
+                sumn= 0
+                for j in xrange(c.length()):
+                    p= c.getJSONArray(j)
+                    if ( j==0 ): basex=p.get(0)
                     dsb.nextRecord( [ p.get(0), p.get(1) ] )
                     sumx= sumx + ( p.get(0) - basex )
                     sumy= sumy + log10( p.get(1) )
                     sumn= sumn + 1
                 featureType= f.get('properties').optString(labelWith,'')
-                #featureType= f.get('properties').get('feature_type')
                 avgx= sumx/sumn +  basex
                 avgy= pow( 10, sumy/sumn )
-                dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )
-        elif typ=='MultiPoint':
-            c= g.get('coordinates')
-            logger.finer( 'loading feature: %d' % c.length() )
-            dsb.setUnits(0,units[0])
-            dsb.setUnits(1,units[1])
-            dsn.setUnits(0,units[0])
-            dsn.setUnits(1,units[1])
-            sumx= 0
-            basex= 0  
-            sumy= 0
-            sumn= 0
-            for j in xrange(c.length()):
-                p= c.getJSONArray(j)
-                if ( j==0 ): basex=p.get(0)
-                dsb.nextRecord( [ p.get(0), p.get(1) ] )
-                sumx= sumx + ( p.get(0) - basex )
-                sumy= sumy + log10( p.get(1) )
-                sumn= sumn + 1
-            featureType= f.get('properties').optString(labelWith,'')
-            avgx= sumx/sumn +  basex
-            avgy= pow( 10, sumy/sumn )
-            dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )            
-    if ( dsb.length>0 ):  # insert fill record to break the connecting line
-        dsb.nextRecord( [ fill, fill ] )  
-
+                dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )            
+        if ( dsb.length>0 ):  # insert fill record to break the connecting line
+            dsb.nextRecord( [ fill, fill ] )  
+    
 ds= dsb.getDataSet()
-bounds = dataset( ds[:,0], ds[:,1], renderType='line' )
-labels= dsn.getDataSet()
 
-if labelOrBounds=='bounds':
-    result= bounds
+if len(ds)==0:
+    result= None
+    
 else:
-    result= labels
+    bounds = dataset( ds[:,0], ds[:,1], renderType='line' )
+    labels= dsn.getDataSet()
+
+    if labelOrBounds=='bounds':
+        result= bounds
+    elif labelOrBounds=='bbox':
+        result= bounds
+    else:
+        result= labels
     
