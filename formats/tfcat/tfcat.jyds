@@ -1,6 +1,6 @@
 from org.autoplot import RenderType
 setScriptDescription('''Reads TFCat files from MASER website.  These are JSON files where
-labelled polygons are stored.''')
+labelled polygons are stored.  See https://sourceforge.net/p/autoplot/feature-requests/763/''')
 
 from java.lang import System,Double
 from java.io import File
