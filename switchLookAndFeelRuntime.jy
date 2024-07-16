@@ -1,4 +1,6 @@
-# demo how you can switch to metal at runtime.
+setScriptDescription('''Demo how you can switch the Java Swing Look and Feel (laf) at 
+runtime.  See also .../demos/2024/20240716/darkLookAndFeelExperiment.jy which
+experiments with a dark mode.''')
 
 from javax.swing import UIManager
 lafs= UIManager.getInstalledLookAndFeels()
