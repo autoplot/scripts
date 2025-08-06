@@ -1,5 +1,7 @@
-# label: Flash Focus
-#cause the selected plot element to flash
+import java.util.Collections, java.lang.Thread
+
+setScriptDescription('cause the selected plot element to flash')
+setScriptLabel('Flash Focus')
 
 r= java.util.Collections.singletonList( dom.controller.plotElement )
 for i in range(3):
