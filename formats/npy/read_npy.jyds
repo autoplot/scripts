@@ -97,12 +97,18 @@ def read_npy(filename):
     elif dtype_descr == '<i4':
         fmt = "<i"  # little-endian 4-byte int
         itemsize = 4
+    elif dtype_descr == '<i8':
+        fmt = "<i"  # little-endian 8-byte int
+        itemsize = 8
     elif dtype_descr == '>f8':
         fmt = ">d"  # big-endian double
         itemsize = 8        
     elif dtype_descr == '>i4':
         fmt = ">i"  # big-endian 4-byte int
         itemsize = 4
+    elif dtype_descr == '>i8':
+        fmt = ">i"  # big-endian 8-byte int
+        itemsize = 8
         
     else:
         raise ValueError("Unsupported dtype: %s" % dtype_descr)
