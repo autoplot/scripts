@@ -98,7 +98,7 @@ def read_npy(filename):
         fmt = "<i"  # little-endian 4-byte int
         itemsize = 4
     elif dtype_descr == '<i8':
-        fmt = "<i"  # little-endian 8-byte int
+        fmt = "<q"  # little-endian 8-byte int
         itemsize = 8
     elif dtype_descr == '>f8':
         fmt = ">d"  # big-endian double
@@ -107,7 +107,7 @@ def read_npy(filename):
         fmt = ">i"  # big-endian 4-byte int
         itemsize = 4
     elif dtype_descr == '>i8':
-        fmt = ">i"  # big-endian 8-byte int
+        fmt = ">q"  # big-endian 8-byte int
         itemsize = 8
         
     else:
@@ -131,4 +131,3 @@ def read_npy(filename):
 arr, shape = read_npy(str(ff))
 
 result= reform( dataset(arr), shape )
-
