@@ -17,4 +17,4 @@ np.savez_compressed(npz_filename, data_array1=array1, another_array=array2, rand
 print(f"Arrays saved to '{npz_filename}' successfully.")
 ```
 
-This plugin allows reading these files directly.  Note only double and integer types are supported.
+This plugin allows reading these files directly.  Note only double, integer, and long (8-byte int) types are supported.
