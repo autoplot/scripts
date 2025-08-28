@@ -1,0 +1,128 @@
+import array, struct, re
+
+setScriptDescription('''Read Numpy .npy files.  This uses ChatGPT-generated code
+for reading npy files in Python 2.2, and only supports ints and floats.''')
+
+resourceURI= getParam( 'resourceURI', 'https://jfaden.net/~jbf/autoplot/data/npy/lat_juno.npy', 'example file to load' )
+
+ff= getFile( resourceURI, monitor )
+
+if ( ff.length<128 ) :
+    raise Exception('File is too short to be a npy file[')
+
+header= getDataSet( 'vap+bin:'+resourceURI + '?byteLength=128' )
+
+if ( header[0]!=0x93 or equivalent( header[1:6], dataset(map( ord, 'numpy' )) ) ):
+    raise Exception('File does not have npy magic number header')
+
+if header[6]!=1 and header[7]!=0:
+    raise Exception('npy file version not supported, must be 1.0')
+    
+if header[8]!=118 and header[9]!=0:
+    raise Exception('npy headerlength must be 118')
+
+headerstr= array.array( "b", map( int, header[10:] ) ).tostring()
+print headerstr
+
+def _safe_parse_header_dict(s):
+    # Extract the few fields we need without full eval/ast
+    # Works for headers like:
+    # "{'descr': '<f8', 'fortran_order': False, 'shape': (3, 4), }"
+    descr_m  = re.search(r"'descr'\s*:\s*'([^']+)'", s)
+    order_m  = re.search(r"'fortran_order'\s*:\s*(True|False)", s)
+    shape_m  = re.search(r"'shape'\s*:\s*\(([^)]*)\)", s)
+
+    if not (descr_m and order_m and shape_m):
+        raise ValueError("Unsupported or malformed NPY header")
+
+    descr = descr_m.group(1)
+    fortran_order = (order_m.group(1) == 'True')
+
+    # Parse the comma-separated ints in the tuple
+    shape_txt = shape_m.group(1).strip()
+    if shape_txt == '':
+        shape = ()
+    else:
+        parts = [p.strip() for p in shape_txt.split(',') if p.strip() != '']
+        # Handle trailing comma in 1-tuple: "(5,)"
+        if len(parts) == 1 and shape_txt.endswith(','):
+            shape = (int(parts[0]),)
+        else:
+            shape = tuple([int(p) for p in parts])
+
+    return {'descr': descr, 'fortran_order': fortran_order, 'shape': shape}
+
+
+spec= _safe_parse_header_dict( headerstr ) 
+
+print spec['shape']
+print spec['descr'] 
+
+# Minimal .npy reader for Python 2.2
+# Supports NPY v1.0 files with simple numeric dtypes like '<f8'
+
+import struct
+
+def read_npy(filename):
+    'read in npy file, using ChatGPT-generated code'
+    
+    f = open(filename, "rb")
+
+    # --- Magic string ---
+    magic = f.read(6)
+    if magic != "\x93NUMPY":
+        raise ValueError("Not a NPY file")
+
+    # --- Version ---
+    major, minor = struct.unpack("BB", f.read(2))
+    if major != 1 or minor != 0:
+        raise ValueError("Only supports NPY v1.0")
+
+    # --- Header length (little-endian unsigned short) ---
+    hlen = struct.unpack("<H", f.read(2))[0]
+
+    # --- Header string ---
+    header = f.read(hlen)
+    header_dict = spec
+
+    dtype_descr = header_dict['descr']
+    fortran_order = header_dict['fortran_order']
+    shape = header_dict['shape']
+
+    # --- Map dtype to struct format ---
+    # only handles a few cases, extend as needed
+    if dtype_descr == '<f8':
+        fmt = "<d"  # little-endian double
+        itemsize = 8
+    elif dtype_descr == '<i4':
+        fmt = "<i"  # little-endian 4-byte int
+        itemsize = 4
+    elif dtype_descr == '>f8':
+        fmt = ">d"  # big-endian double
+        itemsize = 8        
+    elif dtype_descr == '>i4':
+        fmt = ">i"  # big-endian 4-byte int
+        itemsize = 4
+        
+    else:
+        raise ValueError("Unsupported dtype: %s" % dtype_descr)
+
+    # --- Read raw data ---
+    count = 1
+    for dim in shape:
+        count = count * dim
+
+    data = []
+    for i in range(count):
+        bytes = f.read(itemsize)
+        value = struct.unpack(fmt, bytes)[0]
+        data.append(value)
+
+    f.close()
+
+    return data, shape
+    
+arr, shape = read_npy(str(ff))
+
+result= reform( dataset(arr), shape )
+
