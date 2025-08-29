@@ -1,5 +1,6 @@
-# title: Check the locks that block certain operations
-# label: Locks Status
+setScriptTitle('Check the locks that block certain operations')
+setScriptLabel('Locks Status')
+
 from javax.imageio import ImageIO
 from javax.swing import JButton
 from javax.swing import ImageIcon
