@@ -12,8 +12,8 @@ from java.awt import BorderLayout
 from java.lang import Runnable
 from javax.swing import BorderFactory
 
-busy= ImageIcon( URL( 'http://sarahandjeremy.net:8080/hudson/static/66ffcbeb/images/16x16/grey_anime.gif' ) )
-free= ImageIcon( URL( 'http://sarahandjeremy.net:8080/hudson/static/66ffcbeb/images/16x16/blue.gif' ) )
+busy= ImageIcon( URL( 'https://github.com/autoplot/autoplot/blob/main/Autoplot/src/resources/blue_anime.gif' ) )
+free= ImageIcon( URL( 'https://github.com/autoplot/autoplot/blob/main/Autoplot/src/resources/blue.gif' ) )
 
 class UpdateUI( Runnable ):
   def run(self):
