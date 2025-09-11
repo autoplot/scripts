@@ -10,7 +10,7 @@ from org.json import JSONObject
 logger= LoggerManager.getLogger('analysis.TFCat')
 
 #test= getParam( 'test', '3', 'test number', [ '','1','2','3'] )
-test= ''
+test= '4'
 
 if test=='':
     resourceURI= getParam( 'resourceURI', 'https://maser.obspm.fr/doi/10.25935/nhb2-wy29/content/juno_waves_lesia_tfcat_2016.json')
@@ -20,15 +20,22 @@ elif test=='2':
     resourceURI= getParam( 'resourceURI', 'file:/home/jbf/ct/autoplot/data.backup/json/tfcat/10.25935.nhb2-wy29/juno_waves_lesia_tfcat_2016.json')
 elif test=='3':
     resourceURI= getParam( 'resourceURI', 'file:/home/jbf/ct/autoplot/data.backup/json/tfcat/10.25935.r11g-6j63/cassini_faraday_patches_2008.json')
+elif test=='4':
+    resourceURI= getParam( 'resourceURI', 'file:/Users/clouis/Documents/Data/solar_orbiter/TFCat/version2/zooniverse_tfcat_20240207.json')
 else:
     raise Exception('test number')
     
 labelOrBounds= getParam( 'mode', 'bounds', 'Load the label or the bounds', [ 'label','bounds','bbox' ] )
 
 if ( labelOrBounds=='label' ):
-    labelWith= getParam( 'labelWith', 'feature_type', 'The property used to label the data.', { "examples":['obs_id','meridian_transit','feature_type'] } )
+    labelWith= getParam( 'labelWith', 'feature_type', 'The property used to label the data.', { "examples":['obs_id','meridian_transit','feature_type', 'uncertainty', 'quality'] } )
+    featureToPlot = getParam( 'featureToPlot', 'All', 'Select the type of feature for which you want to display a label.', { "examples":['Polygon','MultiPoint','LineString', 'All'] } )
+elif ( labelOrBounds=='bounds' ):
+    featureToPlot = getParam( 'featureToPlot', 'All', 'Select the Type of Feature you want to plot.', { "examples":['Polygon','MultiPoint','LineString', 'All'] } )
+    labelWith= ''
 else:
     labelWith= ''
+
     
 theFile= getFile( resourceURI, monitor )
 
@@ -41,9 +48,39 @@ logger.fine( 'get the units' )
 units= [None,None]
 crs= jo.getJSONObject('crs')
 properties= crs.getJSONObject('properties')
-time_coords= properties.get('time_coords')
-sTimeUnits= time_coords.get('unit') + ' since '+ time_coords.get('time_origin')
+
+if properties.has('time_coords'):
+    time_coords= properties.get('time_coords')
+    sTimeUnits= time_coords.get('unit') + ' since '+ time_coords.get('time_origin')
+    
+else: 
+    time_coords= properties.get('time_coords_id')
+
+    if time_coords == 'unix':
+        sTimeUnits= 's since 1970-01-01 00:00:00.000'
+    
+    elif time_coords == 'jd': 
+        sTimeUnits = 'days since -4713-11-24 12:00:00.000'
+
+    elif time_coords == 'mjd':
+        sTimeUnits = 'days since 1858-11-17 00:00:00.000'
+
+    elif time_coords == 'mjd_cnes':
+        sTimeUnits = 's since 1950-01-01 00:00:00.000'
+
+    elif time_coords == 'mjd_nasa':
+        sTimeUnits = 'days since 2000-01-01 12:00:00.000'
+
+    elif time_coords == 'cdf_tt2000':
+        sTimeUnits = 'ns since 2000-01-01 12:00:00.000'
+
+    else:
+        logger.warning("Unknown time_coords: " + str(time_coords))
+
+
+    
 timeUnits= Units.lookupTimeUnits( sTimeUnits )
+
 units[0]= timeUnits
 sunits=properties.get('spectral_coords').get('unit')
 units[1]= Units.lookupUnits(sunits)
@@ -79,7 +116,8 @@ for i in xrange(fs.length()):
         if ( f.get('type')=='Feature' ):
             g= f.get('geometry')
             typ= g.get('type')
-            if typ=='Polygon':
+
+            if typ == 'Polygon' and featureToPlot.lower() in ('polygon', 'all'):
                 c= g.get('coordinates')
                 logger.finer( 'loading feature: %d' % c.length() )
                 dsb.setUnits(0,units[0])
@@ -106,7 +144,8 @@ for i in xrange(fs.length()):
                     avgx= sumx/sumn +  basex
                     avgy= pow( 10, sumy/sumn )
                     dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )
-            elif typ=='MultiPoint' or typ=='LineString':
+            
+            elif typ=='MultiPoint' and featureToPlot.lower() in ('multipoint', 'all'):
                 c= g.get('coordinates')
                 logger.finer( 'loading feature: %d' % c.length() )
                 dsb.setUnits(0,units[0])
@@ -127,7 +166,68 @@ for i in xrange(fs.length()):
                 featureType= f.get('properties').optString(labelWith,'')
                 avgx= sumx/sumn +  basex
                 avgy= pow( 10, sumy/sumn )
-                dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )            
+                dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )
+
+            
+            elif typ == 'GeometryCollection':
+                gs = g.get('geometries')
+                for gs_index in xrange(gs.length()):
+                    subg=gs.get(gs_index)
+                    typ= subg.get('type')
+
+                    if typ == 'Polygon' and featureToPlot.lower() in ('polygon', 'all'):
+                        c= subg.get('coordinates')
+                        logger.finer( 'loading feature: %d' % c.length() )
+                        dsb.setUnits(0,units[0])
+                        dsb.setUnits(1,units[1])
+                        dsn.setUnits(0,units[0])
+                        dsn.setUnits(1,units[1])
+                        sumx= 0
+                        basex= 0  # This will be needed for times, I think.
+                        sumy= 0
+                        sumn= 0
+                        for j in xrange(c.length()):
+                            p0= c.getJSONArray(j)
+                            if ( j==0 ):
+                                p= p0.getJSONArray(0)
+                                basex= p.get(0)
+                            for k in xrange(p0.length()):
+                                p= p0.getJSONArray(k)
+                                dsb.nextRecord( [ p.get(0), p.get(1) ] )
+                                sumx= sumx + ( p.get(0) - basex )
+                                sumy= sumy + log10( p.get(1) )
+                                sumn= sumn + 1
+                            featureType= f.get('properties').optString(labelWith,'')
+                            #featureType= f.get('properties').get('feature_type')
+                            avgx= sumx/sumn +  basex
+                            avgy= pow( 10, sumy/sumn )
+                            dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )
+                            
+                    elif (typ=='MultiPoint' or typ=='LineString') and featureToPlot.lower() in ('multipoint', 'linestring', 'all'):
+                        c= subg.get('coordinates')
+                        logger.finer( 'loading feature: %d' % c.length() )
+                        dsb.setUnits(0,units[0])
+                        dsb.setUnits(1,units[1])
+                        dsn.setUnits(0,units[0])
+                        dsn.setUnits(1,units[1])
+                        sumx= 0
+                        basex= 0  
+                        sumy= 0
+                        sumn= 0
+                        for j in xrange(c.length()):
+                            p= c.getJSONArray(j)
+                            if ( j==0 ): basex=p.get(0)
+                            dsb.nextRecord( [ p.get(0), p.get(1) ] )
+                            sumx= sumx + ( p.get(0) - basex )
+                            sumy= sumy + log10( p.get(1) )
+                            sumn= sumn + 1
+                        featureType= f.get('properties').optString(labelWith,'')
+                        avgx= sumx/sumn +  basex
+                        avgy= pow( 10, sumy/sumn )
+                        dsn.nextRecord( [ avgx, avgy, nom.createDatum( featureType ) ] )  
+                    
+
+                          
         if ( dsb.length>0 ):  # insert fill record to break the connecting line
             dsb.nextRecord( [ fill, fill ] )  
     
